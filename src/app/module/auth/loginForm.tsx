@@ -22,12 +22,15 @@ type LoginFormProps = {
   onSubmit?: (
     values: LoginFormValues
   ) => void | LoginActionResult | Promise<void | LoginActionResult>
-  onGoogleLogin?: () => void | Promise<void>
 }
 
-const LoginForm = ({ onSubmit, onGoogleLogin }: LoginFormProps) => {
+const LoginForm = ({ onSubmit }: LoginFormProps) => {
   const [showPassword, setShowPassword] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const googleAuthBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(
+    /\/+$/,
+    ""
+  )
 
   const form = useForm({
     defaultValues: {
@@ -130,11 +133,21 @@ const LoginForm = ({ onSubmit, onGoogleLogin }: LoginFormProps) => {
               type="button"
               variant="outline"
               className="w-full"
-              disabled={!onGoogleLogin || isPending}
-              onClick={() => onGoogleLogin?.()}
+              disabled={isPending}
+              nativeButton={!googleAuthBaseUrl}
+              render={
+                googleAuthBaseUrl ? (
+                  <a href={`${googleAuthBaseUrl}/auth/login/google`} />
+                ) : undefined
+              }
+              onClick={
+                googleAuthBaseUrl
+                  ? undefined
+                  : () => setSubmitError("Google sign-in is not configured.")
+              }
             >
               <FcGoogle aria-hidden="true" />
-              Continue with Google
+              Sign in with Google
             </Button>
           </>
         )}

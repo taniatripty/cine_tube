@@ -1,5 +1,6 @@
 import Link from "next/link"
 
+import { registerActions } from "./_action"
 import RegisterForm from "@/app/module/auth/registerForm"
 import {
   Card,
@@ -20,10 +21,7 @@ export default function RegisterPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <RegisterForm />
-          <p className="text-center text-sm text-muted-foreground">
-            Registration is unavailable until account creation is connected.
-          </p>
+          <RegisterForm onSubmit={registerActions} />
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
             <Link

@@ -15,14 +15,27 @@ export type RegisterFormValues = {
   confirmPassword: string
 }
 
-type RegisterFormProps = {
-  onSubmit?: (values: RegisterFormValues) => void | Promise<void>
-  onGoogleLogin?: () => void | Promise<void>
+type RegisterActionResult = {
+  success: boolean
+  message: string
 }
 
-const RegisterForm = ({ onSubmit, onGoogleLogin }: RegisterFormProps) => {
+type RegisterFormProps = {
+  onSubmit?: (
+    values: RegisterFormValues
+  ) => void | RegisterActionResult | Promise<void | RegisterActionResult>
+}
+
+const RegisterForm = ({ onSubmit }: RegisterFormProps) => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [submitResult, setSubmitResult] = useState<RegisterActionResult | null>(
+    null
+  )
+  const googleAuthBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(
+    /\/+$/,
+    ""
+  )
 
   const form = useForm({
     defaultValues: {
@@ -32,7 +45,11 @@ const RegisterForm = ({ onSubmit, onGoogleLogin }: RegisterFormProps) => {
       confirmPassword: "",
     } satisfies RegisterFormValues,
     onSubmit: async ({ value }) => {
-      await onSubmit?.(value)
+      setSubmitResult(null)
+      const result = await onSubmit?.(value)
+      if (result) {
+        setSubmitResult(result)
+      }
     },
   })
 
@@ -47,6 +64,18 @@ const RegisterForm = ({ onSubmit, onGoogleLogin }: RegisterFormProps) => {
         await form.handleSubmit()
       }}
     >
+      {submitResult && (
+        <p
+          className={
+            submitResult.success
+              ? "text-sm text-muted-foreground"
+              : "text-sm text-destructive"
+          }
+          role={submitResult.success ? "status" : "alert"}
+        >
+          {submitResult.message}
+        </p>
+      )}
       <form.Field
         name="name"
         validators={{
@@ -176,8 +205,22 @@ const RegisterForm = ({ onSubmit, onGoogleLogin }: RegisterFormProps) => {
               type="button"
               variant="outline"
               className="w-full"
-              disabled={!onGoogleLogin || isPending}
-              onClick={() => onGoogleLogin?.()}
+              disabled={isPending}
+              nativeButton={!googleAuthBaseUrl}
+              render={
+                googleAuthBaseUrl ? (
+                  <a href={`${googleAuthBaseUrl}/auth/login/google`} />
+                ) : undefined
+              }
+              onClick={
+                googleAuthBaseUrl
+                  ? undefined
+                  : () =>
+                      setSubmitResult({
+                        success: false,
+                        message: "Google sign-in is not configured.",
+                      })
+              }
             >
               <FcGoogle aria-hidden="true" />
               Continue with Google
