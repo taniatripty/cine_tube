@@ -1,5 +1,6 @@
 import Link from "next/link"
 
+import { logInactions } from "./_action"
 import LoginForm from "@/app/module/auth/loginForm"
 import {
   Card,
@@ -20,10 +21,7 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <LoginForm />
-          <p className="text-center text-sm text-muted-foreground">
-            Sign in is unavailable until authentication is connected.
-          </p>
+          <LoginForm onSubmit={logInactions} />
           <p className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
             <Link

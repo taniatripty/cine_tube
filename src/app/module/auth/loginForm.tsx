@@ -13,13 +13,21 @@ export type LoginFormValues = {
   password: string
 }
 
+type LoginActionResult = {
+  success: boolean
+  message: string
+}
+
 type LoginFormProps = {
-  onSubmit?: (values: LoginFormValues) => void | Promise<void>
+  onSubmit?: (
+    values: LoginFormValues
+  ) => void | LoginActionResult | Promise<void | LoginActionResult>
   onGoogleLogin?: () => void | Promise<void>
 }
 
 const LoginForm = ({ onSubmit, onGoogleLogin }: LoginFormProps) => {
   const [showPassword, setShowPassword] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const form = useForm({
     defaultValues: {
@@ -27,7 +35,11 @@ const LoginForm = ({ onSubmit, onGoogleLogin }: LoginFormProps) => {
       password: "",
     } satisfies LoginFormValues,
     onSubmit: async ({ value }) => {
-      await onSubmit?.(value)
+      setSubmitError(null)
+      const result = await onSubmit?.(value)
+      if (result && !result.success) {
+        setSubmitError(result.message)
+      }
     },
   })
 
@@ -42,6 +54,11 @@ const LoginForm = ({ onSubmit, onGoogleLogin }: LoginFormProps) => {
         await form.handleSubmit()
       }}
     >
+      {submitError && (
+        <p className="text-sm text-destructive" role="alert">
+          {submitError}
+        </p>
+      )}
       <form.Field
         name="email"
         validators={{
