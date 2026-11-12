@@ -2,8 +2,10 @@
 
 import AppSubmitButton from "@/components/shared/form/AppSubmitButton"
 import AppField from "@/components/shared/form/Appfield"
+import { Button } from "@/components/ui/button"
 import { useForm } from "@tanstack/react-form"
 import { Eye, EyeOff } from "lucide-react"
+import { FcGoogle } from "react-icons/fc"
 import { useState } from "react"
 
 export type RegisterFormValues = {
@@ -15,9 +17,10 @@ export type RegisterFormValues = {
 
 type RegisterFormProps = {
   onSubmit?: (values: RegisterFormValues) => void | Promise<void>
+  onGoogleLogin?: () => void | Promise<void>
 }
 
-const RegisterForm = ({ onSubmit }: RegisterFormProps) => {
+const RegisterForm = ({ onSubmit, onGoogleLogin }: RegisterFormProps) => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
@@ -157,9 +160,29 @@ const RegisterForm = ({ onSubmit }: RegisterFormProps) => {
 
       <form.Subscribe selector={(state) => state.isSubmitting}>
         {(isPending) => (
-          <AppSubmitButton isPending={isPending} disabled={!onSubmit}>
-            Create account
-          </AppSubmitButton>
+          <>
+            <AppSubmitButton isPending={isPending} disabled={!onSubmit}>
+              Create account
+            </AppSubmitButton>
+            <div className="relative py-1">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <p className="relative mx-auto w-fit bg-card px-2 text-sm text-muted-foreground">
+                or
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={!onGoogleLogin || isPending}
+              onClick={() => onGoogleLogin?.()}
+            >
+              <FcGoogle aria-hidden="true" />
+              Continue with Google
+            </Button>
+          </>
         )}
       </form.Subscribe>
     </form>

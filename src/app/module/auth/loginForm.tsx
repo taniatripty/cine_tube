@@ -2,8 +2,10 @@
 
 import AppField from "@/components/shared/form/Appfield"
 import AppSubmitButton from "@/components/shared/form/AppSubmitButton"
+import { Button } from "@/components/ui/button"
 import { useForm } from "@tanstack/react-form"
 import { Eye, EyeOff } from "lucide-react"
+import { FcGoogle } from "react-icons/fc"
 import { useState } from "react"
 
 export type LoginFormValues = {
@@ -13,9 +15,10 @@ export type LoginFormValues = {
 
 type LoginFormProps = {
   onSubmit?: (values: LoginFormValues) => void | Promise<void>
+  onGoogleLogin?: () => void | Promise<void>
 }
 
-const LoginForm = ({ onSubmit }: LoginFormProps) => {
+const LoginForm = ({ onSubmit, onGoogleLogin }: LoginFormProps) => {
   const [showPassword, setShowPassword] = useState(false)
 
   const form = useForm({
@@ -94,9 +97,29 @@ const LoginForm = ({ onSubmit }: LoginFormProps) => {
 
       <form.Subscribe selector={(state) => state.isSubmitting}>
         {(isPending) => (
-          <AppSubmitButton isPending={isPending} disabled={!onSubmit}>
-            Sign in
-          </AppSubmitButton>
+          <>
+            <AppSubmitButton isPending={isPending} disabled={!onSubmit}>
+              Sign in
+            </AppSubmitButton>
+            <div className="relative py-1">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <p className="relative mx-auto w-fit bg-card px-2 text-sm text-muted-foreground">
+                or
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={!onGoogleLogin || isPending}
+              onClick={() => onGoogleLogin?.()}
+            >
+              <FcGoogle aria-hidden="true" />
+              Continue with Google
+            </Button>
+          </>
         )}
       </form.Subscribe>
     </form>
