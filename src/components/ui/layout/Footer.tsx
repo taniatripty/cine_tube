@@ -1,40 +1,44 @@
-import Link from "next/link"
+import { Clapperboard, Play } from "lucide-react";
+import Link from "next/link";
+
 import {
-  Clapperboard,
-
-  Play,
- 
-} from "lucide-react"
-
-import { FaFacebook ,FaInstagramSquare , FaTwitterSquare ,FaYoutubeSquare } from "react-icons/fa";
-
+  FaFacebook,
+  FaInstagramSquare,
+  FaTwitterSquare,
+  FaYoutubeSquare,
+} from "react-icons/fa";
 
 const browseLinks = [
   { label: "Home", href: "/" },
   { label: "Movies", href: "/movies" },
   { label: "TV Shows", href: "/tv-shows" },
   { label: "New Releases", href: "/new-releases" },
-]
+];
 
 const supportLinks = [
   { label: "My List", href: "/my-list" },
   { label: "Watchlist", href: "/watchlist" },
   { label: "Help Center", href: "/help" },
   { label: "Contact", href: "/contact" },
-]
+];
 
 const legalLinks = [
   { label: "Privacy Policy", href: "/privacy" },
   { label: "Terms of Use", href: "/terms" },
   { label: "Cookie Settings", href: "/cookies" },
   { label: "Advertise", href: "/advertise" },
-]
+];
 
 const socialLinks = [
-  { label: "Instagram", href: "https://instagram.com", icon: FaInstagramSquare },
+  { label: "Facebook", href: "https://facebook.com", icon: FaFacebook },
+  {
+    label: "Instagram",
+    href: "https://instagram.com",
+    icon: FaInstagramSquare,
+  },
   { label: "YouTube", href: "https://youtube.com", icon: FaYoutubeSquare },
-  { label: "X", href: "https://x.com", icon:  FaTwitterSquare},
-]
+  { label: "X", href: "https://x.com", icon: FaTwitterSquare },
+];
 
 export default function Footer() {
   return (
@@ -47,7 +51,10 @@ export default function Footer() {
               className="flex items-center gap-2 text-lg font-semibold tracking-tight text-white"
               aria-label="CineTube home"
             >
-              <Clapperboard className="size-6 text-red-500" aria-hidden="true" />
+              <Clapperboard
+                className="size-6 text-red-500"
+                aria-hidden="true"
+              />
               <span>
                 Cine<span className="text-red-500">Tube</span>
               </span>
@@ -82,7 +89,10 @@ export default function Footer() {
             <ul className="space-y-3 text-sm text-slate-400">
               {browseLinks.map((link) => (
                 <li key={link.label}>
-                  <Link href={link.href} className="transition hover:text-white">
+                  <Link
+                    href={link.href}
+                    className="transition hover:text-white"
+                  >
                     {link.label}
                   </Link>
                 </li>
@@ -97,7 +107,10 @@ export default function Footer() {
             <ul className="space-y-3 text-sm text-slate-400">
               {supportLinks.map((link) => (
                 <li key={link.label}>
-                  <Link href={link.href} className="transition hover:text-white">
+                  <Link
+                    href={link.href}
+                    className="transition hover:text-white"
+                  >
                     {link.label}
                   </Link>
                 </li>
@@ -112,7 +125,10 @@ export default function Footer() {
             <ul className="space-y-3 text-sm text-slate-400">
               {legalLinks.map((link) => (
                 <li key={link.label}>
-                  <Link href={link.href} className="transition hover:text-white">
+                  <Link
+                    href={link.href}
+                    className="transition hover:text-white"
+                  >
                     {link.label}
                   </Link>
                 </li>
@@ -141,5 +157,5 @@ export default function Footer() {
         </div>
       </div>
     </footer>
-  )
+  );
 }
