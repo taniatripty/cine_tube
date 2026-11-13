@@ -1,6 +1,11 @@
 import { httpClient } from "@/lib/axios/httpClient"
 import type { ApiResponse } from "@/types/api.types"
 
+export interface MediaLookupOption {
+  id: string
+  name: string
+}
+
 export interface CreateMediaCredit {
   personId: string
   role: string
@@ -32,6 +37,16 @@ export interface CreateMediaInput {
   credits?: CreateMediaCredit[]
   availabilities?: CreateMediaAvailability[]
 }
+
+export const getMediaGenres = (): Promise<ApiResponse<MediaLookupOption[]>> =>
+  httpClient.get<MediaLookupOption[]>("/genres")
+
+export const getMediaPeople = (): Promise<ApiResponse<MediaLookupOption[]>> =>
+  httpClient.get<MediaLookupOption[]>("/person/all")
+
+export const getStreamingPlatforms = (): Promise<
+  ApiResponse<MediaLookupOption[]>
+> => httpClient.get<MediaLookupOption[]>("/streaming-platforms/all")
 
 export const createMedia = <TData = unknown>(
   payload: CreateMediaInput

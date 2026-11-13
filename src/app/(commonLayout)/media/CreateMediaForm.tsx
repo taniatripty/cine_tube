@@ -12,6 +12,7 @@ import type {
   CreateMediaAvailability,
   CreateMediaCredit,
   CreateMediaInput,
+  MediaLookupOption,
 } from "@/services/media.services"
 
 type CreditFormRow = {
@@ -34,6 +35,16 @@ type FormResult = {
   message: string
 }
 
+const CREDIT_ROLES = [
+  "DIRECTOR",
+  "WRITER",
+  "ACTOR",
+  "PRODUCER",
+  "CINEMATOGRAPHER",
+] as const
+
+const MEDIA_TYPES = ["MOVIE", "SERIES"] as const
+
 const emptyCredit: CreditFormRow = {
   personId: "",
   role: "",
@@ -49,7 +60,19 @@ const emptyAvailability: AvailabilityFormRow = {
   availableUntil: "",
 }
 
-export default function CreateMediaForm() {
+type CreateMediaFormProps = {
+  genres: MediaLookupOption[]
+  people: MediaLookupOption[]
+  platforms: MediaLookupOption[]
+  lookupError?: string
+}
+
+export default function CreateMediaForm({
+  genres,
+  people,
+  platforms,
+  lookupError,
+}: CreateMediaFormProps) {
   const [credits, setCredits] = useState<CreditFormRow[]>([])
   const [availabilities, setAvailabilities] = useState<
     AvailabilityFormRow[]
@@ -97,7 +120,7 @@ export default function CreateMediaForm() {
     if (enteredCredits.some((row) => !row.personId.trim() || !row.role.trim())) {
       setResult({
         success: false,
-        message: "Each credit needs a person ID and role.",
+        message: "Each credit needs a person and role.",
       })
       return
     }
@@ -109,7 +132,7 @@ export default function CreateMediaForm() {
     ) {
       setResult({
         success: false,
-        message: "Each availability needs a platform ID and streaming URL.",
+        message: "Each availability needs a platform and streaming URL.",
       })
       return
     }
@@ -139,10 +162,7 @@ export default function CreateMediaForm() {
         ...(row.availableUntil ? { availableUntil: row.availableUntil } : {}),
       }))
 
-    const genreIds = stringFromForm("genreIds")
-      .split(",")
-      .map((id) => id.trim())
-      .filter(Boolean)
+    const genreIds = formData.getAll("genreIds").map(String)
 
     const payload: CreateMediaInput = {
       title: stringFromForm("title"),
@@ -204,12 +224,21 @@ export default function CreateMediaForm() {
         <p
           className={
             result.success
-              ? "rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300"
-              : "rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+              ? "whitespace-pre-line rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300"
+              : "whitespace-pre-line rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
           }
           role={result.success ? "status" : "alert"}
         >
           {result.message}
+        </p>
+      )}
+
+      {lookupError && (
+        <p
+          className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          role="alert"
+        >
+          {lookupError}
         </p>
       )}
 
@@ -228,12 +257,20 @@ export default function CreateMediaForm() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="type">Media type</Label>
-            <Input
+            <select
               id="type"
               name="type"
-              placeholder="Use a valid media type"
               required
-            />
+              defaultValue=""
+              className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              <option value="">Select a media type</option>
+              {MEDIA_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="synopsis">Synopsis</Label>
@@ -308,17 +345,31 @@ export default function CreateMediaForm() {
         <div className="mb-4">
           <h2 className="text-lg font-semibold">Genres</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Enter genre IDs separated by commas.
+            Select all genres that apply.
           </p>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="genreIds">Genre IDs</Label>
-          <Input
-            id="genreIds"
-            name="genreIds"
-            placeholder="genre-id-1, genre-id-2"
-          />
-        </div>
+        {genres.length ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {genres.map((genre) => (
+              <label
+                key={genre.id}
+                className="flex items-center gap-3 rounded-xl border px-4 py-3 text-sm"
+              >
+                <input
+                  type="checkbox"
+                  name="genreIds"
+                  value={genre.id}
+                  className="size-4 accent-red-600"
+                />
+                {genre.name}
+              </label>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {lookupError ? "Genres are unavailable." : "No genres found."}
+          </p>
+        )}
       </section>
 
       <section className="rounded-2xl border bg-card p-5 sm:p-7">
@@ -349,27 +400,42 @@ export default function CreateMediaForm() {
                 Credit {index + 1}
               </legend>
               <div className="space-y-2">
-                <Label htmlFor={`credit-person-${index}`}>Person ID</Label>
-                <Input
+                <Label htmlFor={`credit-person-${index}`}>Person</Label>
+                <select
                   id={`credit-person-${index}`}
                   value={credit.personId}
                   onChange={(event) =>
                     updateCredit(index, "personId", event.target.value)
                   }
                   required
-                />
+                  className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                >
+                  <option value="">Select a person</option>
+                  {people.map((person) => (
+                    <option key={person.id} value={person.id}>
+                      {person.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor={`credit-role-${index}`}>Role</Label>
-                <Input
+                <select
                   id={`credit-role-${index}`}
                   value={credit.role}
-                  placeholder="Use a valid credit role"
                   onChange={(event) =>
                     updateCredit(index, "role", event.target.value)
                   }
                   required
-                />
+                  className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                >
+                  <option value="">Select a role</option>
+                  {CREDIT_ROLES.map((role) => (
+                    <option key={role} value={role}>
+                      {role}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor={`credit-character-${index}`}>
@@ -449,15 +515,23 @@ export default function CreateMediaForm() {
                 Platform {index + 1}
               </legend>
               <div className="space-y-2">
-                <Label htmlFor={`platform-id-${index}`}>Platform ID</Label>
-                <Input
+                <Label htmlFor={`platform-id-${index}`}>Platform</Label>
+                <select
                   id={`platform-id-${index}`}
                   value={availability.platformId}
                   onChange={(event) =>
                     updateAvailability(index, "platformId", event.target.value)
                   }
                   required
-                />
+                  className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                >
+                  <option value="">Select a platform</option>
+                  {platforms.map((platform) => (
+                    <option key={platform.id} value={platform.id}>
+                      {platform.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor={`streaming-url-${index}`}>Streaming URL</Label>

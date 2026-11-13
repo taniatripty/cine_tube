@@ -1,5 +1,12 @@
+import { Suspense } from "react"
 import { Clapperboard } from "lucide-react"
 
+import {
+  getMediaGenres,
+  getMediaPeople,
+  getStreamingPlatforms,
+  type MediaLookupOption,
+} from "@/services/media.services"
 import CreateMediaForm from "./CreateMediaForm"
 
 export default function CreateMediaPage() {
@@ -19,8 +26,55 @@ export default function CreateMediaPage() {
             streaming availability.
           </p>
         </header>
-        <CreateMediaForm />
+        <Suspense
+          fallback={
+            <p className="rounded-xl border bg-card p-5 text-sm text-muted-foreground">
+              Loading genres, people, and streaming platforms...
+            </p>
+          }
+        >
+          <CreateMediaFormWithOptions />
+        </Suspense>
       </div>
     </main>
+  )
+}
+
+async function CreateMediaFormWithOptions() {
+  const [genresResult, peopleResult, platformsResult] = await Promise.allSettled([
+    getMediaGenres(),
+    getMediaPeople(),
+    getStreamingPlatforms(),
+  ])
+  const failedLookups: string[] = []
+
+  const getOptions = (
+    result: PromiseSettledResult<{ data: MediaLookupOption[] }>,
+    label: string,
+  ): MediaLookupOption[] => {
+    if (result.status === "fulfilled") {
+      return result.value.data
+    }
+
+    console.error(`Failed to load ${label} for media creation:`, result.reason)
+    failedLookups.push(label)
+    return []
+  }
+
+  const genres = getOptions(genresResult, "genres")
+  const people = getOptions(peopleResult, "people")
+  const platforms = getOptions(platformsResult, "streaming platforms")
+
+  return (
+    <CreateMediaForm
+      genres={genres}
+      people={people}
+      platforms={platforms}
+      lookupError={
+        failedLookups.length
+          ? `Could not load ${failedLookups.join(", ")}. Reload the page to try again.`
+          : undefined
+      }
+    />
   )
 }
