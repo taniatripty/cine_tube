@@ -33,10 +33,7 @@ export default function AboutUs() {
       aria-labelledby="about-heading"
       className="relative isolate w-full overflow-hidden bg-slate-950 px-4 py-20 text-white sm:px-6 lg:py-28"
     >
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 -z-10 overflow-hidden"
-      >
+      <div aria-hidden="true" className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -left-32 top-0 size-104 rounded-full bg-red-600/15 blur-3xl" />
         <div className="absolute -right-36 bottom-0 size-120 rounded-full bg-red-500/10 blur-3xl" />
         <div className="absolute inset-0 bg-linear-to-b from-transparent via-slate-950/20 to-slate-950" />

@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance } from "axios"
 import { cookies, headers } from "next/headers"
+import { connection } from "next/server"
 
 import { getNewTokensWithRefreshToken } from "@/services/auth.services"
 import type { ApiResponse } from "@/types/api.types"
@@ -15,6 +16,8 @@ async function tryRefreshToken(
   accessToken: string,
   refreshToken: string
 ): Promise<void> {
+  await connection()
+
   if (!isTokenExpiringSoon(accessToken)) {
     return
   }
