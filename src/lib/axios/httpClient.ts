@@ -4,6 +4,7 @@ import { connection } from "next/server"
 
 import { getNewTokensWithRefreshToken } from "@/services/auth.services"
 import type { ApiResponse } from "@/types/api.types"
+import { getRawSessionToken } from "../sessionTokenUtils"
 import { isTokenExpiringSoon } from "../tokenUtils"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
@@ -49,7 +50,11 @@ const createAxiosInstance = async (): Promise<AxiosInstance> => {
   const cookieStore = await cookies()
   const cookieHeader = cookieStore
     .getAll()
-    .map(({ name, value }) => `${name}=${value}`)
+    .map(({ name, value }) =>
+      name === "better-auth.session_token"
+        ? `${name}=${getRawSessionToken(value)}`
+        : `${name}=${value}`
+    )
     .join("; ")
 
   return axios.create({

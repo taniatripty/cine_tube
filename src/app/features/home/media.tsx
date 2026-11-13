@@ -1,5 +1,8 @@
 import { Clock3, Film, Star } from "lucide-react"
+import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 
+import { getUserInfo } from "@/services/auth.services"
 import { getAllMedia } from "@/services/media.services"
 
 type MediaGenre = {
@@ -32,6 +35,18 @@ const formatRuntime = (runtime: number | null): string | null => {
 }
 
 export default async function Media() {
+  const cookieStore = await cookies()
+  const accessToken = cookieStore.get("accessToken")?.value
+  const sessionToken = cookieStore.get("better-auth.session_token")?.value
+
+  if (
+    !accessToken ||
+    !sessionToken ||
+    !(await getUserInfo(accessToken, sessionToken))
+  ) {
+    redirect("/login")
+  }
+
   let media: MediaItem[]
 
   try {

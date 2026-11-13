@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers"
 
+import { getRawSessionToken } from "@/lib/sessionTokenUtils"
 import type { ApiResponse } from "@/types/api.types"
 
 const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL
@@ -15,6 +16,15 @@ type RefreshedTokens = {
   refreshToken?: string
   token?: string
 }
+
+export type UserInfo = {
+  email: string
+  emailVerified: boolean
+  needPasswordChange: boolean
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null
 
 async function setTokenInCookies(
   name: string,
@@ -77,22 +87,17 @@ export async function getNewTokensWithRefreshToken(
   }
 }
 
-export async function getUserInfo(): Promise<unknown | null> {
+export async function getUserInfo(
+  accessToken: string,
+  sessionToken?: string
+): Promise<UserInfo | null> {
   try {
-    const cookieStore = await cookies()
-    const accessToken = cookieStore.get("accessToken")?.value
-    const sessionToken = cookieStore.get("better-auth.session_token")?.value
-
-    if (!accessToken) {
-      return null
-    }
-
     const authCookies = [
       `accessToken=${accessToken}`,
-      sessionToken ? `better-auth.session_token=${sessionToken}` : undefined,
-    ]
-      .filter(Boolean)
-      .join("; ")
+      ...(sessionToken
+        ? [`better-auth.session_token=${getRawSessionToken(sessionToken)}`]
+        : []),
+    ].join("; ")
 
     const response = await fetch(`${BASE_API_URL}/auth/me`, {
       method: "GET",
@@ -111,8 +116,30 @@ export async function getUserInfo(): Promise<unknown | null> {
       return null
     }
 
-    const { data } = (await response.json()) as ApiResponse<unknown>
-    return data
+    const payload: unknown = await response.json()
+    if (!isRecord(payload) || !isRecord(payload.data)) {
+      console.error("Invalid user info response")
+      return null
+    }
+
+    const data = payload.data
+    const needPasswordChange =
+      data.needPasswordChange ?? data.needpasswordChange
+
+    if (
+      typeof data.email !== "string" ||
+      typeof data.emailVerified !== "boolean" ||
+      typeof needPasswordChange !== "boolean"
+    ) {
+      console.error("User info response is missing required fields")
+      return null
+    }
+
+    return {
+      email: data.email,
+      emailVerified: data.emailVerified,
+      needPasswordChange,
+    }
   } catch (error) {
     console.error("Error fetching user info:", error)
     return null
