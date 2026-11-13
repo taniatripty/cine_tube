@@ -3,11 +3,11 @@
 import { useState, type FormEvent } from "react"
 import { Plus, Trash2 } from "lucide-react"
 
-import { createMediaAction } from "./_actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { createMediaAction } from "@/services/media.services"
 import type {
   CreateMediaAvailability,
   CreateMediaCredit,
