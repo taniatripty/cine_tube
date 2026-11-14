@@ -110,6 +110,14 @@ export default function CreateMediaForm({
 
     const form = event.currentTarget
     const formData = new FormData(form)
+    const posterValue = formData.get("poster")
+    const backdropValue = formData.get("backdrop")
+    const posterFile =
+      posterValue instanceof File && posterValue.size > 0 ? posterValue : null
+    const backdropFile =
+      backdropValue instanceof File && backdropValue.size > 0
+        ? backdropValue
+        : null
     const enteredCredits = credits.filter((row) =>
       Object.values(row).some((value) => value.trim())
     )
@@ -169,11 +177,11 @@ export default function CreateMediaForm({
       synopsis: stringFromForm("synopsis"),
       type: stringFromForm("type"),
       isPremium: formData.has("isPremium"),
-      ...(stringFromForm("poster")
-        ? { poster: stringFromForm("poster") }
+      ...(stringFromForm("posterUrl")
+        ? { poster: stringFromForm("posterUrl") }
         : {}),
-      ...(stringFromForm("backdrop")
-        ? { backdrop: stringFromForm("backdrop") }
+      ...(stringFromForm("backdropUrl")
+        ? { backdrop: stringFromForm("backdropUrl") }
         : {}),
       ...(stringFromForm("releaseDate")
         ? { releaseDate: stringFromForm("releaseDate") }
@@ -199,7 +207,11 @@ export default function CreateMediaForm({
 
     setIsPending(true)
     try {
-      const actionResult = await createMediaAction(payload)
+      const actionResult = await createMediaAction(
+        payload,
+        posterFile,
+        backdropFile,
+      )
       setResult(actionResult)
 
       if (actionResult.success) {
@@ -282,12 +294,36 @@ export default function CreateMediaForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="poster">Poster URL</Label>
-            <Input id="poster" name="poster" placeholder="https://" />
+            <Label htmlFor="poster">Poster image</Label>
+            <Input
+              id="poster"
+              name="poster"
+              type="file"
+              accept="image/*"
+            />
+            <Label htmlFor="posterUrl">Or use a poster image URL</Label>
+            <Input
+              id="posterUrl"
+              name="posterUrl"
+              type="url"
+              placeholder="https://"
+            />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="backdrop">Backdrop URL</Label>
-            <Input id="backdrop" name="backdrop" placeholder="https://" />
+            <Label htmlFor="backdrop">Backdrop image</Label>
+            <Input
+              id="backdrop"
+              name="backdrop"
+              type="file"
+              accept="image/*"
+            />
+            <Label htmlFor="backdropUrl">Or use a backdrop image URL</Label>
+            <Input
+              id="backdropUrl"
+              name="backdropUrl"
+              type="url"
+              placeholder="https://"
+            />
           </div>
         </div>
       </section>

@@ -14,7 +14,7 @@ export interface CreateMediaCredit {
   personId: string
   role: string
   characterName?: string | null
-  displayOrder?: number
+ // displayOrder?: number
 }
 
 export interface CreateMediaAvailability {
@@ -66,9 +66,70 @@ export async function getStreamingPlatforms(): Promise<
 }
 
 export async function createMedia<TData = unknown>(
-  payload: CreateMediaInput
+  payload: CreateMediaInput,
+  images: { poster: File | null; backdrop: File | null },
 ): Promise<ApiResponse<TData>> {
-  return httpClient.post<TData>("/media", payload)
+  const formData = new FormData()
+  const append = (
+    key: string,
+    value: string | number | boolean | null | undefined,
+  ) => {
+    if (value !== null && value !== undefined) {
+      formData.append(key, String(value))
+    }
+  }
+
+  append("title", payload.title)
+  append("synopsis", payload.synopsis)
+  append("type", payload.type)
+  if (!images.poster) {
+    append("poster", payload.poster)
+  }
+  if (!images.backdrop) {
+    append("backdrop", payload.backdrop)
+  }
+  append("releaseDate", payload.releaseDate)
+  append("releaseYear", payload.releaseYear)
+  append("runtime", payload.runtime)
+  append("isPremium", payload.isPremium)
+  append("price", payload.price)
+  append("status", payload.status)
+
+  for (const genreId of payload.genreIds ?? []) {
+    formData.append("genreIds[]", genreId)
+  }
+
+  payload.credits?.forEach((credit, index) => {
+    append(`credits[${index}][personId]`, credit.personId)
+    append(`credits[${index}][role]`, credit.role)
+    append(`credits[${index}][characterName]`, credit.characterName)
+    //append(`credits[${index}][displayOrder]`, credit.displayOrder)
+  })
+
+  payload.availabilities?.forEach((availability, index) => {
+    append(`availabilities[${index}][platformId]`, availability.platformId)
+    append(`availabilities[${index}][streamingUrl]`, availability.streamingUrl)
+    append(`availabilities[${index}][region]`, availability.region)
+    append(
+      `availabilities[${index}][availableFrom]`,
+      availability.availableFrom,
+    )
+    append(
+      `availabilities[${index}][availableUntil]`,
+      availability.availableUntil,
+    )
+  })
+
+  if (images.poster) {
+    formData.append("poster", images.poster, images.poster.name)
+  }
+  if (images.backdrop) {
+    formData.append("backdrop", images.backdrop, images.backdrop.name)
+  }
+
+  return httpClient.post<TData>("/media", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  })
 }
 
 export async function getAllMedia<TData = unknown>(): Promise<
@@ -172,9 +233,11 @@ const getApiErrorMessage = (data: unknown, fallback: string): string => {
 
 export async function createMediaAction(
   payload: CreateMediaInput,
+  poster: File | null,
+  backdrop: File | null,
 ): Promise<CreateMediaActionResult> {
   try {
-    const response = await createMedia(payload)
+    const response = await createMedia(payload, { poster, backdrop })
 
     return {
       success: response.success,
