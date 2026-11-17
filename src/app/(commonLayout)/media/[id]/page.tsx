@@ -37,6 +37,23 @@ type MediaAvailability = {
   }
 }
 
+type MediaEpisode = {
+  id: string
+  episodeNumber: number
+  title: string
+  synopsis: string | null
+  runtime: number | null
+  thumbnail: string | null
+  videoUrl: string | null
+}
+
+type MediaSeason = {
+  id: string
+  seasonNumber: number
+  title: string | null
+  episodes: MediaEpisode[]
+}
+
 type MediaDetails = {
   id: string
   title: string
@@ -56,10 +73,13 @@ type MediaDetails = {
   genres: MediaGenre[]
   credits: MediaCredit[]
   mediaAvailabilities: MediaAvailability[]
+  seasons?: MediaSeason[] | null
 }
 
-const formatRuntime = (runtime: number | null): string | null => {
-  if (runtime === null || runtime <= 0) return null
+const formatRuntime = (
+  runtime: number | null | undefined,
+): string | null => {
+  if (runtime === null || runtime === undefined || runtime <= 0) return null
 
   const hours = Math.floor(runtime / 60)
   const minutes = runtime % 60
@@ -149,6 +169,7 @@ async function MediaDetailsContent({
   const genres = media.genres ?? []
   const credits = media.credits ?? []
   const availabilities = media.mediaAvailabilities ?? []
+  const seasons = media.seasons ?? []
 
   return (
     <main className="flex-1">
@@ -288,6 +309,109 @@ async function MediaDetailsContent({
               {media.synopsis}
             </p>
           </div>
+
+          {media.type === "SERIES" && (
+            <section className="rounded-2xl border bg-card p-6 sm:p-8">
+              <h2 className="text-xl font-semibold">Seasons and episodes</h2>
+              {seasons.length > 0 ? (
+                <div className="mt-5 space-y-4">
+                  {seasons.map((season, seasonIndex) => (
+                    <details
+                      key={season.id}
+                      open={seasonIndex === 0}
+                      className="overflow-hidden rounded-xl border"
+                    >
+                      <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 px-4 py-3 font-medium marker:text-red-600">
+                        <span>
+                          Season {season.seasonNumber}
+                          {season.title ? ` · ${season.title}` : ""}
+                        </span>
+                        <span className="text-sm font-normal text-muted-foreground">
+                          {season.episodes.length}{" "}
+                          {season.episodes.length === 1 ? "episode" : "episodes"}
+                        </span>
+                      </summary>
+
+                      {season.episodes.length > 0 ? (
+                        <div className="divide-y border-t">
+                          {season.episodes.map((episode) => {
+                            const episodeRuntime = formatRuntime(episode.runtime)
+
+                            return (
+                              <article
+                                key={episode.id}
+                                className="flex flex-col gap-4 p-4 sm:flex-row"
+                              >
+                                <div
+                                  className="relative flex aspect-video w-full shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted bg-cover bg-center text-muted-foreground sm:w-56"
+                                  style={
+                                    episode.thumbnail
+                                      ? {
+                                          backgroundImage: `url("${episode.thumbnail}")`,
+                                        }
+                                      : undefined
+                                  }
+                                  role={episode.thumbnail ? "img" : undefined}
+                                  aria-label={
+                                    episode.thumbnail
+                                      ? `${episode.title} thumbnail`
+                                      : undefined
+                                  }
+                                >
+                                  {!episode.thumbnail && (
+                                    <Film
+                                      className="size-8"
+                                      aria-hidden="true"
+                                    />
+                                  )}
+                                </div>
+
+                                <div className="flex min-w-0 flex-1 flex-col items-start">
+                                  <div className="flex w-full flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                                    <h3 className="font-semibold">
+                                      {episode.episodeNumber}. {episode.title}
+                                    </h3>
+                                    {episodeRuntime && (
+                                      <span className="text-sm text-muted-foreground">
+                                        {episodeRuntime}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {episode.synopsis && (
+                                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                                      {episode.synopsis}
+                                    </p>
+                                  )}
+                                  {episode.videoUrl && (
+                                    <a
+                                      href={episode.videoUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="mt-3 inline-flex items-center rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-500"
+                                    >
+                                      Watch episode
+                                    </a>
+                                  )}
+                                </div>
+                              </article>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <p className="border-t px-4 py-4 text-sm text-muted-foreground">
+                          No episodes are available for this season yet.
+                        </p>
+                      )}
+                    </details>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-muted-foreground">
+                  No seasons or episodes are available yet.
+                </p>
+              )}
+            </section>
+          )}
 
           {credits.length > 0 && (
             <section className="rounded-2xl border bg-card p-6 sm:p-8">
