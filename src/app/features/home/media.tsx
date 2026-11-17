@@ -1,7 +1,9 @@
 import { Clock3, Film, Star } from "lucide-react"
+import Link from "next/link"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
+import { Button } from "@/components/ui/button"
 import { getUserInfo } from "@/services/auth.services"
 import { getAllMedia } from "@/services/media.services"
 
@@ -168,6 +170,14 @@ export default async function Media() {
                         ))}
                       </div>
                     )}
+
+                    <Button
+                      className="w-full"
+                      nativeButton={false}
+                      render={<Link href={`/media/${encodeURIComponent(item.id)}`} />}
+                    >
+                      See details
+                    </Button>
                   </div>
                 </article>
               )

@@ -570,7 +570,7 @@ export default function CreateMediaForm({
                 </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor={`streaming-url-${index}`}>Streaming URL</Label>
+                <Label htmlFor={`streaming-url-${index}`}>Streaming Link</Label>
                 <Input
                   id={`streaming-url-${index}`}
                   type="url"
