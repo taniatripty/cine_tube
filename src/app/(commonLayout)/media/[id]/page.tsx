@@ -74,6 +74,9 @@ type MediaDetails = {
   runtime: number | null
   isPremium: boolean
   price: string | null
+  purchasePrice?: string | null
+  monthlyRentPrice?: string | null
+  yearlyRentPrice?: string | null
   averageRating: number
   ratingCount: number
   reviewCount: number
@@ -186,11 +189,22 @@ async function MediaDetailsContent({
 
   const runtime = formatRuntime(media.runtime)
   const releaseDate = formatDate(media.releaseDate)
-  const price = formatPrice(media.price)
+  const purchasePriceValue = media.purchasePrice ?? media.price
+  const purchasePrice = formatPrice(purchasePriceValue)
+  const monthlyRentPriceValue = media.monthlyRentPrice ?? null
+  const yearlyRentPriceValue = media.yearlyRentPrice ?? null
+  const monthlyRentPrice = formatPrice(media.monthlyRentPrice ?? null)
+  const yearlyRentPrice = formatPrice(media.yearlyRentPrice ?? null)
   const genres = media.genres ?? []
   const credits = media.credits ?? []
   const availabilities = media.mediaAvailabilities ?? []
   const seasons = media.seasons ?? []
+  const checkoutHref = (price: string | null, rentalPeriod?: string) => {
+    const query = new URLSearchParams({ mediaId: media.id })
+    if (price) query.set("price", price)
+    if (rentalPeriod) query.set("rentalPeriod", rentalPeriod)
+    return `/checkout?${query.toString()}`
+  }
 
   return (
     <main className="flex-1">
@@ -296,18 +310,44 @@ async function MediaDetailsContent({
             <div className="mt-7 flex flex-wrap gap-3">
               <WatchlistButton mediaId={media.id} />
               {media.isPremium && (
-                <Button
-                  className="min-h-10 bg-red-600 px-4 text-white hover:bg-red-500"
-                  nativeButton={false}
-                  render={
-                    <Link
-                      href={`/checkout?mediaId=${encodeURIComponent(media.id)}${price ? `&price=${encodeURIComponent(price)}` : ""}`}
-                    />
-                  }
-                >
-                  <ShoppingCart aria-hidden="true" />
-                  {price ? `Purchase · ${price}` : "Purchase"}
-                </Button>
+                <>
+                  <Button
+                    className="min-h-10 bg-red-600 px-4 text-white hover:bg-red-500"
+                    nativeButton={false}
+                    render={<Link href={checkoutHref(purchasePriceValue)} />}
+                  >
+                    <ShoppingCart aria-hidden="true" />
+                    {purchasePrice ? `Purchase · ${purchasePrice}` : "Purchase"}
+                  </Button>
+                  {monthlyRentPrice && (
+                    <Button
+                      variant="outline"
+                      className="min-h-10 border-white/30 bg-black/30 px-4 text-white hover:bg-white/10 hover:text-white"
+                      nativeButton={false}
+                      render={
+                        <Link
+                          href={checkoutHref(monthlyRentPriceValue, "monthly")}
+                        />
+                      }
+                    >
+                      Rent · 1 month · {monthlyRentPrice}
+                    </Button>
+                  )}
+                  {yearlyRentPrice && (
+                    <Button
+                      variant="outline"
+                      className="min-h-10 border-white/30 bg-black/30 px-4 text-white hover:bg-white/10 hover:text-white"
+                      nativeButton={false}
+                      render={
+                        <Link
+                          href={checkoutHref(yearlyRentPriceValue, "yearly")}
+                        />
+                      }
+                    >
+                      Rent · 1 year · {yearlyRentPrice}
+                    </Button>
+                  )}
+                </>
               )}
             </div>
 

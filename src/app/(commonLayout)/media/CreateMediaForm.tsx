@@ -19,7 +19,6 @@ type CreditFormRow = {
   personId: string
   role: string
   characterName: string
-  displayOrder: string
 }
 
 type AvailabilityFormRow = {
@@ -49,7 +48,6 @@ const emptyCredit: CreditFormRow = {
   personId: "",
   role: "",
   characterName: "",
-  displayOrder: "0",
 }
 
 const emptyAvailability: AvailabilityFormRow = {
@@ -158,7 +156,6 @@ export default function CreateMediaForm({
       ...(row.characterName.trim()
         ? { characterName: row.characterName.trim() }
         : {}),
-      displayOrder: Number(row.displayOrder) || 0,
     }))
 
     const availabilityPayload: CreateMediaAvailability[] =
@@ -192,8 +189,14 @@ export default function CreateMediaForm({
       ...(numberFromForm("runtime") !== undefined
         ? { runtime: numberFromForm("runtime") }
         : {}),
-      ...(numberFromForm("price") !== undefined
-        ? { price: numberFromForm("price") }
+      ...(numberFromForm("purchasePrice") !== undefined
+        ? { purchasePrice: numberFromForm("purchasePrice") }
+        : {}),
+      ...(numberFromForm("monthlyRentPrice") !== undefined
+        ? { monthlyRentPrice: numberFromForm("monthlyRentPrice") }
+        : {}),
+      ...(numberFromForm("yearlyRentPrice") !== undefined
+        ? { yearlyRentPrice: numberFromForm("yearlyRentPrice") }
         : {}),
       ...(stringFromForm("status")
         ? { status: stringFromForm("status") }
@@ -355,8 +358,34 @@ export default function CreateMediaForm({
             <Input id="runtime" name="runtime" type="number" min="1" step="1" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="price">Price</Label>
-            <Input id="price" name="price" type="number" min="0" step="0.01" />
+            <Label htmlFor="purchasePrice">Purchase price</Label>
+            <Input
+              id="purchasePrice"
+              name="purchasePrice"
+              type="number"
+              min="0"
+              step="0.01"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="monthlyRentPrice">Monthly rental price</Label>
+            <Input
+              id="monthlyRentPrice"
+              name="monthlyRentPrice"
+              type="number"
+              min="0"
+              step="0.01"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="yearlyRentPrice">Yearly rental price</Label>
+            <Input
+              id="yearlyRentPrice"
+              name="yearlyRentPrice"
+              type="number"
+              min="0"
+              step="0.01"
+            />
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="status">Status</Label>
@@ -485,20 +514,7 @@ export default function CreateMediaForm({
                   }
                 />
               </div>
-              <div className="flex items-end gap-2">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor={`credit-order-${index}`}>Display order</Label>
-                  <Input
-                    id={`credit-order-${index}`}
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={credit.displayOrder}
-                    onChange={(event) =>
-                      updateCredit(index, "displayOrder", event.target.value)
-                    }
-                  />
-                </div>
+              <div className="flex items-end justify-end">
                 <Button
                   type="button"
                   variant="outline"

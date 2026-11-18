@@ -14,7 +14,6 @@ export interface CreateMediaCredit {
   personId: string
   role: string
   characterName?: string | null
- // displayOrder?: number
 }
 
 export interface CreateMediaAvailability {
@@ -36,6 +35,9 @@ export interface CreateMediaInput {
   runtime?: number | null
   isPremium?: boolean
   price?: number | null
+  purchasePrice?: number | null
+  monthlyRentPrice?: number | null
+  yearlyRentPrice?: number | null
   status?: string
   genreIds?: string[]
   credits?: CreateMediaCredit[]
@@ -92,7 +94,10 @@ export async function createMedia<TData = unknown>(
   append("releaseYear", payload.releaseYear)
   append("runtime", payload.runtime)
   append("isPremium", payload.isPremium)
-  append("price", payload.price)
+  append("price", payload.price ?? payload.purchasePrice)
+  append("purchasePrice", payload.purchasePrice)
+  append("monthlyRentPrice", payload.monthlyRentPrice)
+  append("yearlyRentPrice", payload.yearlyRentPrice)
   append("status", payload.status)
 
   for (const genreId of payload.genreIds ?? []) {
@@ -103,7 +108,6 @@ export async function createMedia<TData = unknown>(
     append(`credits[${index}][personId]`, credit.personId)
     append(`credits[${index}][role]`, credit.role)
     append(`credits[${index}][characterName]`, credit.characterName)
-    //append(`credits[${index}][displayOrder]`, credit.displayOrder)
   })
 
   payload.availabilities?.forEach((availability, index) => {
