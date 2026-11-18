@@ -1,10 +1,18 @@
 import { Suspense } from "react"
-import { ArrowLeft, CalendarDays, Clock3, Film, Star } from "lucide-react"
+import {
+  ArrowLeft,
+  CalendarDays,
+  Clock3,
+  Film,
+  ShoppingCart,
+  Star,
+} from "lucide-react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { getMediaById } from "@/services/media.services"
+import WatchlistButton from "./WatchlistButton"
 
 type MediaGenre = {
   id: string
@@ -102,6 +110,18 @@ const formatDate = (date: string | null): string | null => {
   })
 }
 
+const formatPrice = (price: string | null): string | null => {
+  if (!price) return null
+
+  const parsedPrice = Number(price)
+  if (!Number.isFinite(parsedPrice)) return null
+
+  return new Intl.NumberFormat("en", {
+    style: "currency",
+    currency: "USD",
+  }).format(parsedPrice)
+}
+
 export default function MediaDetailsPage({
   params,
 }: {
@@ -166,6 +186,7 @@ async function MediaDetailsContent({
 
   const runtime = formatRuntime(media.runtime)
   const releaseDate = formatDate(media.releaseDate)
+  const price = formatPrice(media.price)
   const genres = media.genres ?? []
   const credits = media.credits ?? []
   const availabilities = media.mediaAvailabilities ?? []
@@ -271,6 +292,24 @@ async function MediaDetailsContent({
             <p className="mt-6 max-w-2xl text-sm leading-7 text-white/85 sm:text-base">
               {media.synopsis}
             </p>
+
+            <div className="mt-7 flex flex-wrap gap-3">
+              <WatchlistButton mediaId={media.id} />
+              {media.isPremium && (
+                <Button
+                  className="min-h-10 bg-red-600 px-4 text-white hover:bg-red-500"
+                  nativeButton={false}
+                  render={
+                    <Link
+                      href={`/checkout?mediaId=${encodeURIComponent(media.id)}${price ? `&price=${encodeURIComponent(price)}` : ""}`}
+                    />
+                  }
+                >
+                  <ShoppingCart aria-hidden="true" />
+                  {price ? `Purchase · ${price}` : "Purchase"}
+                </Button>
+              )}
+            </div>
 
             {availabilities.length > 0 && (
               <div className="mt-7 flex flex-wrap gap-3">

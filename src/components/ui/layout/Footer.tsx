@@ -16,8 +16,8 @@ const browseLinks = [
 ];
 
 const supportLinks = [
-  { label: "My List", href: "/my-list" },
-  { label: "Watchlist", href: "/watchlist" },
+  { label: "My List", href: "/watchList" },
+  { label: "Watchlist", href: "/watchList" },
   { label: "Help Center", href: "/help" },
   { label: "Contact", href: "/contact" },
 ];

@@ -17,7 +17,7 @@ const navigationLinks = [
   { label: "Home", href: "/" },
   { label: "Movies", href: "/movies" },
   { label: "TV Shows", href: "/tv-shows" },
-  { label: "My List", href: "/my-list" },
+  { label: "My List", href: "/watchList" },
 ]
 
 export default function Navbar() {

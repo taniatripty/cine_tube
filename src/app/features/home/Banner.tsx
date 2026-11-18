@@ -26,7 +26,7 @@ export default function Banner({
   duration = "2h 18m",
   genres = ["Sci‑Fi", "Adventure", "Drama"],
   primaryHref = "/movies/the-last-horizon",
-  secondaryHref = "/my-list",
+  secondaryHref = "/watchList",
 }: BannerProps) {
   return (
     <section className="relative isolate overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950 shadow-2xl shadow-slate-950/40">
