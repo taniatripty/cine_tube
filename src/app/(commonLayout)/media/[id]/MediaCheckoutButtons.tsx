@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import {
   createMediaCheckout,
   type MediaCheckoutAccessType,
-} from "@/services/payment.services"
+} from "@/services/payment.actions"
 
 type MediaCheckoutButtonsProps = {
   mediaId: string
