@@ -4,6 +4,7 @@ import {
   CalendarDays,
   Clock3,
   Film,
+  MessageCircle,
   Star,
 } from "lucide-react"
 import Link from "next/link"
@@ -62,6 +63,31 @@ type MediaSeason = {
   episodes: MediaEpisode[]
 }
 
+type MediaComment = {
+  id: string
+  content: string
+  createdAt?: string | null
+  parentId?: string | null
+  replies?: MediaComment[] | null
+  user?: {
+    name?: string | null
+    username?: string | null
+  } | null
+}
+
+type MediaReview = {
+  id: string
+  rating: number
+  content: string
+  isSpoiler?: boolean
+  createdAt?: string | null
+  user?: {
+    name?: string | null
+    username?: string | null
+  } | null
+  comments?: MediaComment[] | null
+}
+
 type MediaDetails = {
   id: string
   title: string
@@ -84,6 +110,7 @@ type MediaDetails = {
   genres: MediaGenre[]
   credits: MediaCredit[]
   mediaAvailabilities: MediaAvailability[]
+  reviews?: MediaReview[] | null
   seasons?: MediaSeason[] | null
 }
 
@@ -99,7 +126,7 @@ const formatRuntime = (
   return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`
 }
 
-const formatDate = (date: string | null): string | null => {
+const formatDate = (date: string | null | undefined): string | null => {
   if (!date) return null
 
   const parsedDate = new Date(date)
@@ -111,6 +138,76 @@ const formatDate = (date: string | null): string | null => {
     year: "numeric",
     timeZone: "UTC",
   })
+}
+
+const getCommentReplies = (
+  comment: MediaComment,
+  allComments: MediaComment[],
+): MediaComment[] => {
+  const replies = [
+    ...allComments.filter((item) => item.parentId === comment.id),
+    ...(comment.replies ?? []),
+  ]
+  const uniqueReplies = new Map<string, MediaComment>()
+  for (const reply of replies) {
+    uniqueReplies.set(reply.id, reply)
+  }
+  return [...uniqueReplies.values()]
+}
+
+const countComments = (comments: MediaComment[]): number => {
+  const visited = new Set<string>()
+  const visit = (comment: MediaComment) => {
+    if (visited.has(comment.id)) return
+    visited.add(comment.id)
+    getCommentReplies(comment, comments).forEach(visit)
+  }
+  comments.forEach(visit)
+  return visited.size
+}
+
+function CommentThread({
+  comment,
+  allComments,
+  ancestorIds = [],
+}: {
+  comment: MediaComment
+  allComments: MediaComment[]
+  ancestorIds?: string[]
+}) {
+  const commenter =
+    comment.user?.name ?? comment.user?.username ?? "Viewer"
+  const commentDate = formatDate(comment.createdAt)
+  const currentAncestorIds = [...ancestorIds, comment.id]
+  const replies = getCommentReplies(comment, allComments).filter(
+    (reply) => !currentAncestorIds.includes(reply.id),
+  )
+
+  return (
+    <li className="rounded-lg bg-muted/50 px-3 py-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+        <span className="font-medium">{commenter}</span>
+        {commentDate && (
+          <time className="text-muted-foreground">{commentDate}</time>
+        )}
+      </div>
+      <p className="mt-2 whitespace-pre-line text-sm leading-6 text-muted-foreground">
+        {comment.content}
+      </p>
+      {replies.length > 0 && (
+        <ul className="mt-3 space-y-3 border-l-2 pl-4">
+          {replies.map((reply) => (
+            <CommentThread
+              key={reply.id}
+              comment={reply}
+              allComments={allComments}
+              ancestorIds={currentAncestorIds}
+            />
+          ))}
+        </ul>
+      )}
+    </li>
+  )
 }
 
 const formatPrice = (price: string | null): string | null => {
@@ -196,6 +293,7 @@ async function MediaDetailsContent({
   const genres = media.genres ?? []
   const credits = media.credits ?? []
   const availabilities = media.mediaAvailabilities ?? []
+  const reviews = media.reviews ?? []
   const seasons = media.seasons ?? []
 
   return (
@@ -492,6 +590,127 @@ async function MediaDetailsContent({
               </div>
             </section>
           )}
+
+          <section
+            id="reviews"
+            className="scroll-mt-24 rounded-2xl border bg-card p-6 sm:p-8"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold">Reviews</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {media.averageRating > 0
+                    ? `${media.averageRating.toFixed(1)} out of 5 · `
+                    : ""}
+                  {media.reviewCount}{" "}
+                  {media.reviewCount === 1 ? "review" : "reviews"}
+                </p>
+              </div>
+              <Button
+                nativeButton={false}
+                render={
+                  <Link
+                    href={`/review?mediaId=${encodeURIComponent(media.id)}`}
+                  />
+                }
+              >
+                <Star className="size-4" aria-hidden="true" />
+                Add a review
+              </Button>
+            </div>
+
+            {reviews.length > 0 ? (
+              <div className="mt-6 space-y-4">
+                {reviews.map((review) => {
+                  const comments = review.comments ?? []
+                  const commentCount = countComments(comments)
+                  const topLevelComments = comments.filter(
+                    (comment) => !comment.parentId,
+                  )
+                  const reviewer =
+                    review.user?.name ?? review.user?.username ?? "Viewer"
+                  const reviewDate = formatDate(review.createdAt)
+
+                  return (
+                    <article
+                      key={review.id}
+                      className="rounded-xl border p-4 sm:p-5"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span className="font-medium">{reviewer}</span>
+                          <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+                            <Star
+                              className="size-4 fill-yellow-400 text-yellow-400"
+                              aria-hidden="true"
+                            />
+                            {review.rating}/5
+                          </span>
+                          {reviewDate && (
+                            <time className="text-sm text-muted-foreground">
+                              {reviewDate}
+                            </time>
+                          )}
+                        </div>
+                        {review.isSpoiler && (
+                          <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-300">
+                            Spoiler
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="mt-3 whitespace-pre-line text-sm leading-6">
+                        {review.content}
+                      </p>
+
+                      <div
+                        id={`comments-${review.id}`}
+                        className="mt-4 border-t pt-4"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <h3 className="text-sm font-semibold">
+                            Comments ({commentCount})
+                          </h3>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            nativeButton={false}
+                            render={<Link href={`#comments-${review.id}`} />}
+                          >
+                            <MessageCircle
+                              className="size-4"
+                              aria-hidden="true"
+                            />
+                            Comment
+                          </Button>
+                        </div>
+
+                        {topLevelComments.length > 0 ? (
+                          <ul className="mt-3 space-y-3">
+                            {topLevelComments.map((comment) => (
+                              <CommentThread
+                                key={comment.id}
+                                comment={comment}
+                                allComments={comments}
+                              />
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="mt-3 text-sm text-muted-foreground">
+                            No comments yet.
+                          </p>
+                        )}
+                      </div>
+                    </article>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="mt-6 text-sm text-muted-foreground">
+                No reviews yet. Be the first to share your thoughts.
+              </p>
+            )}
+          </section>
         </section>
 
         <aside className="space-y-5">
