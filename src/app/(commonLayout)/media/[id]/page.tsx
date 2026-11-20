@@ -12,7 +12,9 @@ import { notFound } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { getMediaById } from "@/services/media.services"
+import type { ReviewReactionSummary } from "@/types/reaction.types"
 import MediaCheckoutButtons from "./MediaCheckoutButtons"
+import ReviewReactions from "./ReviewReactions"
 import WatchlistButton from "./WatchlistButton"
 
 type MediaGenre = {
@@ -81,6 +83,7 @@ type MediaReview = {
   content: string
   isSpoiler?: boolean
   createdAt?: string | null
+  reviewLikes?: ReviewReactionSummary[] | null
   user?: {
     name?: string | null
     username?: string | null
@@ -169,10 +172,14 @@ const countComments = (comments: MediaComment[]): number => {
 function CommentThread({
   comment,
   allComments,
+  mediaId,
+  reviewId,
   ancestorIds = [],
 }: {
   comment: MediaComment
   allComments: MediaComment[]
+  mediaId: string
+  reviewId: string
   ancestorIds?: string[]
 }) {
   const commenter =
@@ -182,6 +189,7 @@ function CommentThread({
   const replies = getCommentReplies(comment, allComments).filter(
     (reply) => !currentAncestorIds.includes(reply.id),
   )
+  const replyHref = `/comment?mediaId=${encodeURIComponent(mediaId)}&reviewId=${encodeURIComponent(reviewId)}&parentId=${encodeURIComponent(comment.id)}`
 
   return (
     <li className="rounded-lg bg-muted/50 px-3 py-3">
@@ -194,6 +202,16 @@ function CommentThread({
       <p className="mt-2 whitespace-pre-line text-sm leading-6 text-muted-foreground">
         {comment.content}
       </p>
+      <Button
+        variant="ghost"
+        size="sm"
+        nativeButton={false}
+        render={<Link href={replyHref} />}
+        className="mt-2"
+      >
+        <MessageCircle className="size-4" aria-hidden="true" />
+        Reply
+      </Button>
       {replies.length > 0 && (
         <ul className="mt-3 space-y-3 border-l-2 pl-4">
           {replies.map((reply) => (
@@ -201,6 +219,8 @@ function CommentThread({
               key={reply.id}
               comment={reply}
               allComments={allComments}
+              mediaId={mediaId}
+              reviewId={reviewId}
               ancestorIds={currentAncestorIds}
             />
           ))}
@@ -663,6 +683,11 @@ async function MediaDetailsContent({
                         {review.content}
                       </p>
 
+                      <ReviewReactions
+                        reviewId={review.id}
+                        reactions={review.reviewLikes ?? []}
+                      />
+
                       <div
                         id={`comments-${review.id}`}
                         className="mt-4 border-t pt-4"
@@ -675,13 +700,17 @@ async function MediaDetailsContent({
                             variant="outline"
                             size="sm"
                             nativeButton={false}
-                            render={<Link href={`#comments-${review.id}`} />}
+                            render={
+                              <Link
+                                href={`/comment?mediaId=${encodeURIComponent(media.id)}&reviewId=${encodeURIComponent(review.id)}`}
+                              />
+                            }
                           >
                             <MessageCircle
                               className="size-4"
                               aria-hidden="true"
                             />
-                            Comment
+                            Add comment
                           </Button>
                         </div>
 
@@ -692,6 +721,8 @@ async function MediaDetailsContent({
                                 key={comment.id}
                                 comment={comment}
                                 allComments={comments}
+                                mediaId={media.id}
+                                reviewId={review.id}
                               />
                             ))}
                           </ul>
