@@ -1,6 +1,7 @@
 "use server"
 
 import { cookies } from "next/headers"
+import jwt from "jsonwebtoken"
 
 import { getRawSessionToken } from "@/lib/sessionTokenUtils"
 import type { ApiResponse } from "@/types/api.types"
@@ -18,6 +19,7 @@ type RefreshedTokens = {
 }
 
 export type UserInfo = {
+  name: string
   email: string
   emailVerified: boolean
   needPasswordChange: boolean
@@ -105,6 +107,7 @@ export async function getUserInfo(
         "Content-Type": "application/json",
         Cookie: authCookies,
       },
+      cache: "no-store",
     })
 
     if (!response.ok) {
@@ -125,6 +128,13 @@ export async function getUserInfo(
     const data = payload.data
     const needPasswordChange =
       data.needPasswordChange ?? data.needpasswordChange
+    const tokenPayload = jwt.decode(accessToken)
+    const tokenName =
+      typeof tokenPayload === "object" &&
+      tokenPayload !== null &&
+      typeof tokenPayload.name === "string"
+        ? tokenPayload.name
+        : undefined
 
     if (
       typeof data.email !== "string" ||
@@ -136,6 +146,10 @@ export async function getUserInfo(
     }
 
     return {
+      name:
+        typeof data.name === "string" && data.name.trim()
+          ? data.name
+          : tokenName ?? data.email,
       email: data.email,
       emailVerified: data.emailVerified,
       needPasswordChange,
@@ -144,4 +158,30 @@ export async function getUserInfo(
     console.error("Error fetching user info:", error)
     return null
   }
+}
+
+export async function getCurrentUserAction(): Promise<
+  Pick<UserInfo, "name" | "email"> | null
+> {
+  const cookieStore = await cookies()
+  const accessToken = cookieStore.get("accessToken")?.value
+
+  if (!accessToken) {
+    return null
+  }
+
+  const user = await getUserInfo(
+    accessToken,
+    cookieStore.get("better-auth.session_token")?.value
+  )
+
+  return user ? { name: user.name, email: user.email } : null
+}
+
+export async function logOutAction(): Promise<void> {
+  const cookieStore = await cookies()
+
+  cookieStore.delete("accessToken")
+  cookieStore.delete("refreshToken")
+  cookieStore.delete("better-auth.session_token")
 }

@@ -12,9 +12,9 @@ import { notFound } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { getMediaById } from "@/services/media.services"
-import type { ReviewReactionSummary } from "@/types/reaction.types"
+import type { ReactionSummary } from "@/types/reaction.types"
 import MediaCheckoutButtons from "./MediaCheckoutButtons"
-import ReviewReactions from "./ReviewReactions"
+import ReactionPicker from "./ReactionPicker"
 import WatchlistButton from "./WatchlistButton"
 
 type MediaGenre = {
@@ -70,6 +70,7 @@ type MediaComment = {
   content: string
   createdAt?: string | null
   parentId?: string | null
+  commentLikes?: ReactionSummary[] | null
   replies?: MediaComment[] | null
   user?: {
     name?: string | null
@@ -83,7 +84,7 @@ type MediaReview = {
   content: string
   isSpoiler?: boolean
   createdAt?: string | null
-  reviewLikes?: ReviewReactionSummary[] | null
+  reviewLikes?: ReactionSummary[] | null
   user?: {
     name?: string | null
     username?: string | null
@@ -148,8 +149,8 @@ const getCommentReplies = (
   allComments: MediaComment[],
 ): MediaComment[] => {
   const replies = [
-    ...allComments.filter((item) => item.parentId === comment.id),
     ...(comment.replies ?? []),
+    ...allComments.filter((item) => item.parentId === comment.id),
   ]
   const uniqueReplies = new Map<string, MediaComment>()
   for (const reply of replies) {
@@ -202,6 +203,11 @@ function CommentThread({
       <p className="mt-2 whitespace-pre-line text-sm leading-6 text-muted-foreground">
         {comment.content}
       </p>
+      <ReactionPicker
+        targetId={comment.id}
+        targetType="comment"
+        reactions={comment.commentLikes ?? []}
+      />
       <Button
         variant="ghost"
         size="sm"
@@ -683,8 +689,9 @@ async function MediaDetailsContent({
                         {review.content}
                       </p>
 
-                      <ReviewReactions
-                        reviewId={review.id}
+                      <ReactionPicker
+                        targetId={review.id}
+                        targetType="review"
                         reactions={review.reviewLikes ?? []}
                       />
 

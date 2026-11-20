@@ -1,9 +1,15 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
 import { Clapperboard, Menu, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import {
+  getCurrentUserAction,
+  logOutAction,
+} from "@/services/auth.services"
 import {
   Sheet,
   SheetContent,
@@ -20,7 +26,50 @@ const navigationLinks = [
   { label: "My List", href: "/watchList" },
 ]
 
+type NavbarUser = {
+  name: string
+  email: string
+}
+
 export default function Navbar() {
+  const pathname = usePathname()
+  const router = useRouter()
+  const [user, setUser] = useState<NavbarUser | null>(null)
+  const [authPending, setAuthPending] = useState(true)
+
+  useEffect(() => {
+    let active = true
+
+    getCurrentUserAction()
+      .then((currentUser) => {
+        if (active) {
+          setUser(currentUser)
+        }
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to load navbar user:", error)
+        if (active) {
+          setUser(null)
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setAuthPending(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [pathname])
+
+  const handleLogOut = async () => {
+    await logOutAction()
+    setUser(null)
+    router.replace("/")
+    router.refresh()
+  }
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
@@ -77,14 +126,39 @@ export default function Navbar() {
             </Button>
           </form>
 
-          <Button
-            variant="outline"
-            className="hidden sm:inline-flex"
-            nativeButton={false}
-            render={<Link href="/login" />}
-          >
-            Sign in
-          </Button>
+          {authPending ? (
+            <div
+              className="hidden h-9 w-40 animate-pulse rounded-md bg-muted sm:block"
+              aria-hidden="true"
+            />
+          ) : user ? (
+            <div className="hidden items-center gap-3 sm:flex">
+              <div className="max-w-40 text-right">
+                <p className="truncate text-sm font-medium">{user.name}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {user.email}
+                </p>
+              </div>
+              <form action={handleLogOut}>
+                <Button type="submit" variant="outline">
+                  Log out
+                </Button>
+              </form>
+            </div>
+          ) : (
+            <div className="hidden items-center gap-2 sm:flex">
+              <Button
+                variant="outline"
+                nativeButton={false}
+                render={<Link href="/login" />}
+              >
+                Sign in
+              </Button>
+              <Button nativeButton={false} render={<Link href="/register" />}>
+                Register
+              </Button>
+            </div>
+          )}
 
           <Sheet>
             <SheetTrigger
@@ -132,14 +206,37 @@ export default function Navbar() {
                     <Search aria-hidden="true" />
                   </Button>
                 </form>
-                <Button
-                  variant="outline"
-                  className="mt-3"
-                  nativeButton={false}
-                  render={<Link href="/login" />}
-                >
-                  Sign in
-                </Button>
+                {authPending ? null : user ? (
+                  <div className="mt-3 space-y-3 rounded-md border p-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{user.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                    <form action={handleLogOut}>
+                      <Button type="submit" variant="outline" className="w-full">
+                        Log out
+                      </Button>
+                    </form>
+                  </div>
+                ) : (
+                  <div className="mt-3 flex flex-col gap-2">
+                    <Button
+                      variant="outline"
+                      nativeButton={false}
+                      render={<Link href="/login" />}
+                    >
+                      Sign in
+                    </Button>
+                    <Button
+                      nativeButton={false}
+                      render={<Link href="/register" />}
+                    >
+                      Register
+                    </Button>
+                  </div>
+                )}
               </nav>
             </SheetContent>
           </Sheet>

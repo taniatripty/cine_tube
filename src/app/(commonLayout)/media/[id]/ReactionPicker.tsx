@@ -7,13 +7,17 @@ import { Button } from "@/components/ui/button"
 import {
   CONTENT_REACTION_TYPES,
   type ContentReactionType,
+  type ReactionActionResult,
   type ReactionCounts,
-  type ReviewReactionSummary,
+  type ReactionSummary,
 } from "@/types/reaction.types"
+import {
+  removeCommentReactionAction,
+  setCommentReactionAction,
+} from "@/services/comment.services"
 import {
   removeReviewReactionAction,
   setReviewReactionAction,
-  type ReviewReactionActionResult,
 } from "@/services/review.services"
 
 const REACTION_PICKER_DELAY_MS = 2000
@@ -39,7 +43,7 @@ const reactionEmojis: Record<ContentReactionType, string> = {
 }
 
 const getInitialCounts = (
-  reactions: ReviewReactionSummary[],
+  reactions: ReactionSummary[],
 ): ReactionCounts => {
   const counts: ReactionCounts = {
     LIKE: 0,
@@ -58,12 +62,14 @@ const getInitialCounts = (
   return counts
 }
 
-export default function ReviewReactions({
-  reviewId,
+export default function ReactionPicker({
+  targetId,
+  targetType,
   reactions,
 }: {
-  reviewId: string
-  reactions: ReviewReactionSummary[]
+  targetId: string
+  targetType: "review" | "comment"
+  reactions: ReactionSummary[]
 }) {
   const [counts, setCounts] = useState(() => getInitialCounts(reactions))
   const [activeReaction, setActiveReaction] =
@@ -71,7 +77,7 @@ export default function ReviewReactions({
   const [isPickerOpen, setIsPickerOpen] = useState(false)
   const [isPickerPinned, setIsPickerPinned] = useState(false)
   const [isPending, setIsPending] = useState(false)
-  const [result, setResult] = useState<ReviewReactionActionResult | null>(null)
+  const [result, setResult] = useState<ReactionActionResult | null>(null)
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -140,7 +146,7 @@ export default function ReviewReactions({
   }
 
   const applyActionResult = (
-    actionResult: ReviewReactionActionResult,
+    actionResult: ReactionActionResult,
     nextActiveReaction: ContentReactionType | null,
   ) => {
     setResult(actionResult)
@@ -152,26 +158,30 @@ export default function ReviewReactions({
     setActiveReaction(nextActiveReaction)
   }
 
+  const submitReaction = (type: ContentReactionType) =>
+    targetType === "review"
+      ? setReviewReactionAction({ reviewId: targetId, type })
+      : setCommentReactionAction({ commentId: targetId, type })
+
+  const clearReaction = () =>
+    targetType === "review"
+      ? removeReviewReactionAction(targetId)
+      : removeCommentReactionAction(targetId)
+
   const handleReaction = async (type: ContentReactionType) => {
     setIsPending(true)
     setResult(null)
     try {
       if (activeReaction === type) {
-        applyActionResult(
-          await removeReviewReactionAction(reviewId),
-          null,
-        )
+        applyActionResult(await clearReaction(), null)
       } else {
-        applyActionResult(
-          await setReviewReactionAction({ reviewId, type }),
-          type,
-        )
+        applyActionResult(await submitReaction(type), type)
       }
     } catch (error) {
-      console.error("Review reaction request failed:", error)
+      console.error(`${targetType} reaction request failed:`, error)
       setResult({
         success: false,
-        message: "Unable to save your reaction. Please try again.",
+        message: `Unable to save your ${targetType} reaction. Please try again.`,
       })
     } finally {
       setIsPending(false)
@@ -182,12 +192,12 @@ export default function ReviewReactions({
     setIsPending(true)
     setResult(null)
     try {
-      applyActionResult(await removeReviewReactionAction(reviewId), null)
+      applyActionResult(await clearReaction(), null)
     } catch (error) {
-      console.error("Removing review reaction failed:", error)
+      console.error(`Removing ${targetType} reaction failed:`, error)
       setResult({
         success: false,
-        message: "Unable to remove your reaction. Please try again.",
+        message: `Unable to remove your ${targetType} reaction. Please try again.`,
       })
     } finally {
       setIsPending(false)
@@ -220,7 +230,7 @@ export default function ReviewReactions({
       >
         <div
           role="group"
-          aria-label="Review reactions"
+          aria-label={`${targetType === "review" ? "Review" : "Comment"} reactions`}
           className="flex flex-wrap gap-2"
         >
           {baseReactions.map((type) => {

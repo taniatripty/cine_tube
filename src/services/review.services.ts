@@ -6,8 +6,10 @@ import { httpClient } from "@/lib/axios/httpClient"
 import type { ApiErrorResponse, ApiResponse } from "@/types/api.types"
 import {
   CONTENT_REACTION_TYPES,
+  mapReactionCounts,
   type ContentReactionType,
-  type ReactionCounts,
+  type ReactionActionResult,
+  type ReactionCountGroup,
 } from "@/types/reaction.types"
 
 export type CreateReviewInput = {
@@ -22,38 +24,11 @@ export type CreateReviewActionResult = Pick<
   "success" | "message"
 >
 
-export type ReviewReactionActionResult = {
-  success: boolean
-  message: string
-  counts?: ReactionCounts
-}
+export type ReviewReactionActionResult = ReactionActionResult
 
 type ReviewReactionApiData = {
   reaction: { type: ContentReactionType } | null
-  reactionCounts: {
-    type: ContentReactionType
-    _count: { _all: number }
-  }[]
-}
-
-const emptyReactionCounts = (): ReactionCounts => ({
-  LIKE: 0,
-  DISLIKE: 0,
-  LOVE: 0,
-  LAUGH: 0,
-  WOW: 0,
-  SAD: 0,
-  ANGRY: 0,
-})
-
-const mapReactionCounts = (
-  reactionCounts: ReviewReactionApiData["reactionCounts"],
-): ReactionCounts => {
-  const counts = emptyReactionCounts()
-  for (const reaction of reactionCounts) {
-    counts[reaction.type] = reaction._count._all
-  }
-  return counts
+  reactionCounts: ReactionCountGroup[]
 }
 
 export async function createReview<TData = unknown>(
