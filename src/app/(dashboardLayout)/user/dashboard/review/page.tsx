@@ -11,6 +11,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { getMyReviews, type MyReview } from "@/services/review.services"
+import { ReviewActions } from "./ReviewActions"
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -190,6 +191,9 @@ function ReviewCard({ review }: { review: MyReview }) {
           )}
         </ul>
       )}
+
+      {/* Edit / Delete actions (PENDING only) */}
+      <ReviewActions review={review} />
     </article>
   )
 }

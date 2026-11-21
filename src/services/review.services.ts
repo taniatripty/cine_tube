@@ -196,6 +196,78 @@ export async function removeReviewReactionAction(
   }
 }
 
+// ── Update / Delete ───────────────────────────────────────────────────────────
+
+export type UpdateReviewInput = {
+  rating?: number
+  content?: string
+  isSpoiler?: boolean
+}
+
+export type UpdateReviewActionResult = Pick<ApiErrorResponse, "success" | "message">
+export type DeleteReviewActionResult = Pick<ApiErrorResponse, "success" | "message">
+
+export async function updateReviewAction(
+  reviewId: string,
+  payload: UpdateReviewInput,
+): Promise<UpdateReviewActionResult> {
+  if (!reviewId?.trim()) {
+    return { success: false, message: "Review ID is required." }
+  }
+  if (
+    payload.rating !== undefined &&
+    (!Number.isInteger(payload.rating) || payload.rating < 1 || payload.rating > 5)
+  ) {
+    return { success: false, message: "Rating must be between 1 and 5." }
+  }
+  if (payload.content !== undefined && !payload.content.trim()) {
+    return { success: false, message: "Review content cannot be empty." }
+  }
+
+  try {
+    const response = await httpClient.patch<unknown>(
+      `/reviews/${encodeURIComponent(reviewId.trim())}`,
+      payload,
+    )
+    return { success: response.success, message: response.message }
+  } catch (error) {
+    if (axios.isAxiosError<ApiErrorResponse>(error)) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ?? `Update failed: ${error.message}`,
+      }
+    }
+    console.error("Review update failed:", error)
+    return { success: false, message: "Update failed due to an unexpected error." }
+  }
+}
+
+export async function deleteReviewAction(
+  reviewId: string,
+): Promise<DeleteReviewActionResult> {
+  if (!reviewId?.trim()) {
+    return { success: false, message: "Review ID is required." }
+  }
+
+  try {
+    const response = await httpClient.delete<unknown>(
+      `/reviews/${encodeURIComponent(reviewId.trim())}`,
+    )
+    return { success: response.success, message: response.message }
+  } catch (error) {
+    if (axios.isAxiosError<ApiErrorResponse>(error)) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ?? `Delete failed: ${error.message}`,
+      }
+    }
+    console.error("Review delete failed:", error)
+    return { success: false, message: "Delete failed due to an unexpected error." }
+  }
+}
+
 export async function createReviewAction(
   payload: CreateReviewInput,
 ): Promise<CreateReviewActionResult> {
