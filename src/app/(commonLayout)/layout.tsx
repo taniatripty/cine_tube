@@ -1,16 +1,19 @@
-import Footer from "@/components/ui/layout/Footer";
-import Navbar from "@/components/ui/layout/navbar";
-import React from "react";
+import React, { Suspense } from "react"
+import Footer from "@/components/ui/layout/Footer"
+import Navbar, { NavbarSkeleton } from "@/components/ui/layout/navbar"
 
 export default function CommonLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
-  <>
-  <Navbar></Navbar>
-  {children}
-  <Footer></Footer>
-  </>)
+    <>
+      <Suspense fallback={<NavbarSkeleton />}>
+        <Navbar />
+      </Suspense>
+      {children}
+      <Footer />
+    </>
+  )
 }

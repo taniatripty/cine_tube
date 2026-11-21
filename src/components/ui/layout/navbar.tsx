@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Clapperboard, Menu, Search } from "lucide-react"
@@ -31,7 +31,26 @@ type NavbarUser = {
   email: string
 }
 
-export default function Navbar() {
+export function NavbarSkeleton() {
+  return (
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="flex shrink-0 items-center gap-2 font-semibold tracking-tight">
+          <Clapperboard className="size-6 text-red-600" aria-hidden="true" />
+          <span className="text-lg">
+            Cine<span className="text-red-600">Tube</span>
+          </span>
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <div className="hidden h-9 w-56 rounded-md bg-muted/60 animate-pulse sm:block lg:w-72" />
+          <div className="h-9 w-24 rounded-md bg-muted/60 animate-pulse" />
+        </div>
+      </div>
+    </header>
+  )
+}
+
+function NavbarContent() {
   const pathname = usePathname()
   const router = useRouter()
   const [user, setUser] = useState<NavbarUser | null>(null)
@@ -243,5 +262,13 @@ export default function Navbar() {
         </div>
       </div>
     </header>
+  )
+}
+
+export default function Navbar() {
+  return (
+    <Suspense fallback={<NavbarSkeleton />}>
+      <NavbarContent />
+    </Suspense>
   )
 }

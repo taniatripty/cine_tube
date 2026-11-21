@@ -12,6 +12,70 @@ import {
   type ReactionCountGroup,
 } from "@/types/reaction.types"
 
+// ── My Reviews types ──────────────────────────────────────────────────────────
+
+export type ReviewMedia = {
+  id: string
+  title: string
+  synopsis: string
+  poster: string | null
+  backdrop: string | null
+  type: string
+  releaseYear: number | null
+  averageRating: number | null
+  reviewCount: number
+}
+
+export type ReviewLike = {
+  userId: string
+  reviewId: string
+  type: ContentReactionType
+  createdAt: string
+}
+
+export type CommentLike = {
+  userId: string
+  commentId: string
+  type: ContentReactionType
+  createdAt: string
+}
+
+export type ReviewComment = {
+  id: string
+  userId: string
+  reviewId: string
+  parentId: string | null
+  content: string
+  status: string
+  moderatedById: string | null
+  moderatedAt: string | null
+  createdAt: string
+  updatedAt: string
+  commentLikes: CommentLike[]
+}
+
+export type MyReview = {
+  id: string
+  userId: string
+  mediaId: string
+  rating: number
+  content: string
+  isSpoiler: boolean
+  status: string
+  moderatedById: string | null
+  moderatedAt: string | null
+  moderationNote: string | null
+  createdAt: string
+  updatedAt: string
+  media: ReviewMedia
+  reviewLikes: ReviewLike[]
+  comments: ReviewComment[]
+}
+
+export async function getMyReviews(): Promise<ApiResponse<MyReview[]>> {
+  return httpClient.get<MyReview[]>("/reviews")
+}
+
 export type CreateReviewInput = {
   mediaId: string
   rating: number
