@@ -1,13 +1,29 @@
-import React from "react";
+import { Suspense } from "react"
+import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 
-export default function UserDaoshbordLayout({
+async function UserAuthGuard() {
+  const cookieStore = await cookies()
+  const accessToken = cookieStore.get("accessToken")?.value
+
+  if (!accessToken) {
+    redirect("/login?redirect=/user/dashboard")
+  }
+
+  return null
+}
+
+export default function UserDashboardLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
-  <>
-   User Dashboard Layout
-  {children}
-  </>)
+    <>
+      <Suspense fallback={null}>
+        <UserAuthGuard />
+      </Suspense>
+      {children}
+    </>
+  )
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import jwt from "jsonwebtoken"
 
 import { isTokenExpiringSoon } from "@/lib/tokenUtils"
 import {
@@ -8,12 +9,13 @@ import {
 } from "@/services/refreshToken.service"
 
 export async function proxy(request: NextRequest) {
-  const accessToken = request.cookies.get("accessToken")?.value
+  const pathname = request.nextUrl.pathname
+  const rawAccessToken = request.cookies.get("accessToken")?.value
   const refreshToken = request.cookies.get("refreshToken")?.value
   const requestHeaders = new Headers(request.headers)
   let refreshedTokens: RefreshedAuthTokens | null = null
 
-  if (refreshToken && (!accessToken || isTokenExpiringSoon(accessToken))) {
+  if (refreshToken && (!rawAccessToken || isTokenExpiringSoon(rawAccessToken))) {
     try {
       refreshedTokens = await requestRefreshedTokens(refreshToken)
 
@@ -42,6 +44,58 @@ export async function proxy(request: NextRequest) {
       )
     } catch (error) {
       console.error("Error refreshing token in proxy:", error)
+    }
+  }
+
+  const effectiveAccessToken = refreshedTokens?.accessToken ?? rawAccessToken
+
+  // Extract user role from JWT token
+  let role: string | undefined
+  if (effectiveAccessToken) {
+    try {
+      const decoded = jwt.decode(effectiveAccessToken)
+      if (
+        decoded &&
+        typeof decoded === "object" &&
+        typeof (decoded as Record<string, unknown>).role === "string"
+      ) {
+        role = (decoded as Record<string, unknown>).role as string
+      }
+    } catch {
+      role = undefined
+    }
+  }
+
+  // Handle direct /admin root hit -> redirect to /admin/dashboard
+  if (pathname === "/admin") {
+    return NextResponse.redirect(new URL("/admin/dashboard", request.url))
+  }
+
+  // Handle direct /user root hit -> redirect to /user/dashboard
+  if (pathname === "/user") {
+    return NextResponse.redirect(new URL("/user/dashboard", request.url))
+  }
+
+  // Access control for Admin routes (/admin or /admin/*)
+  if (pathname.startsWith("/admin")) {
+    if (!effectiveAccessToken) {
+      const loginUrl = new URL("/login", request.url)
+      loginUrl.searchParams.set("redirect", pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+
+    if (role?.toUpperCase() !== "ADMIN") {
+      // Non-admin user cannot access admin dashboard -> redirect to user dashboard
+      return NextResponse.redirect(new URL("/user/dashboard", request.url))
+    }
+  }
+
+  // Access control for User routes (/user or /user/*)
+  if (pathname.startsWith("/user")) {
+    if (!effectiveAccessToken) {
+      const loginUrl = new URL("/login", request.url)
+      loginUrl.searchParams.set("redirect", pathname)
+      return NextResponse.redirect(loginUrl)
     }
   }
 

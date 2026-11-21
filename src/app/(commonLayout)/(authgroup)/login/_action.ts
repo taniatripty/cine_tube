@@ -108,5 +108,13 @@ export const logInactions = async (
     redirect(`/resetPass?email=${encodeURIComponent(user.email)}`)
   }
 
-  redirect(getSafeRedirectPath(redirectPath))
+  if (redirectPath) {
+    redirect(getSafeRedirectPath(redirectPath))
+  }
+
+  if (role?.toUpperCase() === "ADMIN") {
+    redirect("/admin/dashboard")
+  }
+
+  redirect("/user/dashboard")
 }

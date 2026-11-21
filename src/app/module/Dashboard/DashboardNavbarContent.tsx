@@ -9,8 +9,6 @@ import {
   Bell,
   LogOut,
   ExternalLink,
-  BookmarkCheck,
-  ShoppingBag,
   LayoutDashboard,
   ShieldCheck,
   User as UserIcon,
@@ -23,7 +21,11 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
+import { getIconComponent } from "@/lib/iconMapper"
+import { getNavSectionsByRole } from "@/lib/navItems"
 import { logOutAction } from "@/services/auth.services"
+import type { NavSection } from "@/types/dashboard.types"
 
 export type DashboardNavbarUser = {
   name: string
@@ -33,6 +35,7 @@ export type DashboardNavbarUser = {
 
 interface DashboardNavbarContentProps {
   user: DashboardNavbarUser | null
+  navItems?: NavSection[]
 }
 
 export function DashboardNavbarSkeleton() {
@@ -70,6 +73,7 @@ export function DashboardNavbarSkeleton() {
 
 export default function DashboardNavbarContent({
   user,
+  navItems,
 }: DashboardNavbarContentProps) {
   const pathname = usePathname()
   const router = useRouter()
@@ -92,7 +96,11 @@ export default function DashboardNavbarContent({
   const profileRef = useRef<HTMLDivElement>(null)
   const notificationsRef = useRef<HTMLDivElement>(null)
 
-  const isAdmin = user?.role === "ADMIN" || pathname.startsWith("/admin")
+  const isAdmin = user?.role?.toUpperCase() === "ADMIN" || pathname.startsWith("/admin")
+  const activeNavSections =
+    navItems && navItems.length > 0
+      ? navItems
+      : getNavSectionsByRole(user?.role || (isAdmin ? "ADMIN" : "USER"))
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -163,9 +171,9 @@ export default function DashboardNavbarContent({
           </Button>
 
           <Link
-            href="/"
+            href={isAdmin ? "/admin/dashboard" : "/user/dashboard"}
             className="flex items-center gap-2 font-semibold tracking-tight transition-opacity hover:opacity-90"
-            aria-label="CineTube home"
+            aria-label="CineTube dashboard home"
           >
             <Clapperboard className="size-6 text-red-600" aria-hidden="true" />
             <span className="text-lg font-bold">
@@ -175,7 +183,10 @@ export default function DashboardNavbarContent({
 
           <div className="hidden sm:flex items-center gap-2">
             <span className="text-muted-foreground text-sm">/</span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500/10 px-2.5 py-0.5 text-xs font-semibold text-red-600 dark:bg-red-950/40 dark:text-red-400">
+            <Link
+              href={isAdmin ? "/admin/dashboard" : "/user/dashboard"}
+              className="inline-flex items-center gap-1.5 rounded-full bg-red-500/10 px-2.5 py-0.5 text-xs font-semibold text-red-600 dark:bg-red-950/40 dark:text-red-400 hover:opacity-80 transition-opacity"
+            >
               {isAdmin ? (
                 <>
                   <ShieldCheck className="size-3.5" />
@@ -187,7 +198,7 @@ export default function DashboardNavbarContent({
                   Dashboard
                 </>
               )}
-            </span>
+            </Link>
           </div>
         </div>
 
@@ -342,34 +353,31 @@ export default function DashboardNavbarContent({
 
                   <div className="my-1 border-t border-border" />
 
-                  {/* Navigation Links */}
+                  {/* Navigation Links dynamically mapped from navItems */}
                   <nav className="flex flex-col gap-0.5">
-                    <Link
-                      href={isAdmin ? "/admin/dashboard" : "/user/dashboard"}
-                      className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      <LayoutDashboard className="size-4 text-muted-foreground" />
-                      Dashboard Home
-                    </Link>
-
-                    <Link
-                      href="/watchList"
-                      className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      <BookmarkCheck className="size-4 text-muted-foreground" />
-                      My Watchlist
-                    </Link>
-
-                    <Link
-                      href="/myPurchase"
-                      className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      <ShoppingBag className="size-4 text-muted-foreground" />
-                      My Purchases
-                    </Link>
+                    {activeNavSections
+                      .flatMap((section) => section.items)
+                      .slice(0, 5)
+                      .map((item) => {
+                        const Icon = getIconComponent(item.icon)
+                        const isActive = pathname === item.href
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className={cn(
+                              "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors hover:bg-muted",
+                              isActive
+                                ? "bg-red-500/10 text-red-600 font-semibold dark:bg-red-950/40 dark:text-red-400"
+                                : "text-foreground"
+                            )}
+                            onClick={() => setIsProfileOpen(false)}
+                          >
+                            <Icon className="size-4 text-muted-foreground" />
+                            <span>{item.title}</span>
+                          </Link>
+                        )
+                      })}
 
                     <Link
                       href="/"
@@ -377,7 +385,7 @@ export default function DashboardNavbarContent({
                       onClick={() => setIsProfileOpen(false)}
                     >
                       <Clapperboard className="size-4 text-muted-foreground" />
-                      Explore Movies & Shows
+                      <span>Explore Main Site</span>
                     </Link>
                   </nav>
 
@@ -418,9 +426,9 @@ export default function DashboardNavbarContent({
         </div>
       </div>
 
-      {/* Mobile Drawer/Dropdown Panel */}
+      {/* Mobile Drawer/Dropdown Panel with navItems */}
       {isMobileMenuOpen && (
-        <div className="absolute top-16 left-0 right-0 border-b bg-background p-4 shadow-lg md:hidden animate-in slide-in-from-top-2 duration-150 z-40">
+        <div className="absolute top-16 left-0 right-0 border-b bg-background p-4 shadow-lg md:hidden animate-in slide-in-from-top-2 duration-150 z-40 max-h-[calc(100vh-4rem)] overflow-y-auto">
           <form action="/search" role="search" className="mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -433,35 +441,52 @@ export default function DashboardNavbarContent({
             </div>
           </form>
 
-          <div className="flex flex-col gap-1 text-sm">
-            <Link
-              href={isAdmin ? "/admin/dashboard" : "/user/dashboard"}
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-foreground hover:bg-muted"
-            >
-              <LayoutDashboard className="size-4 text-muted-foreground" />
-              Dashboard Home
-            </Link>
-            <Link
-              href="/watchList"
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-foreground hover:bg-muted"
-            >
-              <BookmarkCheck className="size-4 text-muted-foreground" />
-              My Watchlist
-            </Link>
-            <Link
-              href="/myPurchase"
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-foreground hover:bg-muted"
-            >
-              <ShoppingBag className="size-4 text-muted-foreground" />
-              My Purchases
-            </Link>
-            <Link
-              href="/"
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-foreground hover:bg-muted"
-            >
-              <ExternalLink className="size-4 text-muted-foreground" />
-              Back to Main Website
-            </Link>
+          {/* Dynamic Navigation Items grouped by section */}
+          <div className="flex flex-col gap-4 text-sm">
+            {activeNavSections.map((section, sectionId) => (
+              <div key={sectionId} className="space-y-1">
+                {section.title && (
+                  <h4 className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    {section.title}
+                  </h4>
+                )}
+
+                <div className="space-y-1">
+                  {section.items.map((item) => {
+                    const isActive = pathname === item.href
+                    const Icon = getIconComponent(item.icon)
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors",
+                          isActive
+                            ? "bg-red-500/10 text-red-600 font-semibold dark:bg-red-950/40 dark:text-red-400"
+                            : "text-foreground hover:bg-muted"
+                        )}
+                      >
+                        <Icon className="size-4 text-muted-foreground" />
+                        <span>{item.title}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+
+            <div className="border-t pt-2">
+              <Link
+                href="/"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
+              >
+                <ExternalLink className="size-4 text-muted-foreground" />
+                Back to Main Website
+              </Link>
+            </div>
           </div>
 
           {user && (

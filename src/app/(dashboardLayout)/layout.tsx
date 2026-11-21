@@ -2,8 +2,7 @@ import React, { Suspense } from "react"
 import DashboardNavbar, {
   DashboardNavbarSkeleton,
 } from "@/app/module/Dashboard/DahboardNavbar"
-
-
+import DashboardSidebar from "@/app/module/Dashboard/DashboardSidebar"
 
 export default function RootDashboardLayout({
   children,
@@ -13,7 +12,13 @@ export default function RootDashboardLayout({
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Dashboard Sidebar */}
-      {/* <DashboardSiderbar></DashboardSiderbar> */}
+      <Suspense
+        fallback={
+          <div className="hidden md:flex h-full w-64 border-r bg-card animate-pulse" />
+        }
+      >
+        <DashboardSidebar />
+      </Suspense>
 
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* DashboardNavbar wrapped in Suspense to enable streaming and prevent blocking prerender */}

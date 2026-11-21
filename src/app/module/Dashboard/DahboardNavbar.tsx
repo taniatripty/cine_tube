@@ -1,6 +1,7 @@
 import { cookies } from "next/headers"
 import jwt from "jsonwebtoken"
 import { getCurrentUserAction } from "@/services/auth.services"
+import { getNavSectionsByRole } from "@/lib/navItems"
 import DashboardNavbarContent, {
   DashboardNavbarSkeleton,
   type DashboardNavbarUser,
@@ -39,7 +40,9 @@ export default async function DashboardNavbar() {
     console.error("Failed to load dashboard navbar user:", error)
   }
 
-  return <DashboardNavbarContent user={user} />
+  const navItems = getNavSectionsByRole(user?.role)
+
+  return <DashboardNavbarContent user={user} navItems={navItems} />
 }
 
 export { DashboardNavbar, DashboardNavbarSkeleton }
