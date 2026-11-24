@@ -97,7 +97,7 @@ function NavbarContent() {
 
   const navLinks = [
     ...navigationLinks,
-    ...(user ? [{ label: "Dashboard", href: dashboardHref }] : []),
+    // ...(user ? [{ label: "Dashboard", href: dashboardHref }] : []),
   ]
 
   return (

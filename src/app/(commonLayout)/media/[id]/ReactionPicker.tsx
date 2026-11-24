@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { X } from "lucide-react"
+import { SmilePlus, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -20,7 +20,7 @@ import {
   setReviewReactionAction,
 } from "@/services/review.services"
 
-const REACTION_PICKER_DELAY_MS = 2000
+const REACTION_PICKER_DELAY_MS = 400
 
 const reactionLabels: Record<ContentReactionType, string> = {
   LIKE: "Like",
@@ -56,7 +56,9 @@ const getInitialCounts = (
   }
 
   for (const reaction of reactions) {
-    counts[reaction.type] += 1
+    if (reaction?.type && counts[reaction.type] !== undefined) {
+      counts[reaction.type] += 1
+    }
   }
 
   return counts
@@ -66,14 +68,16 @@ export default function ReactionPicker({
   targetId,
   targetType,
   reactions,
+  initialActiveReaction,
 }: {
   targetId: string
   targetType: "review" | "comment"
   reactions: ReactionSummary[]
+  initialActiveReaction?: ContentReactionType | null
 }) {
   const [counts, setCounts] = useState(() => getInitialCounts(reactions))
   const [activeReaction, setActiveReaction] =
-    useState<ContentReactionType | null>(null)
+    useState<ContentReactionType | null>(() => initialActiveReaction ?? null)
   const [isPickerOpen, setIsPickerOpen] = useState(false)
   const [isPickerPinned, setIsPickerPinned] = useState(false)
   const [isPending, setIsPending] = useState(false)
@@ -125,7 +129,7 @@ export default function ReactionPicker({
       closeTimer.current = setTimeout(() => {
         setIsPickerOpen(false)
         closeTimer.current = null
-      }, 400)
+      }, 300)
     }
   }
 
@@ -206,6 +210,11 @@ export default function ReactionPicker({
 
   const hasReactions = CONTENT_REACTION_TYPES.some((type) => counts[type] > 0)
   const baseReactions: ContentReactionType[] = ["LIKE", "DISLIKE"]
+  for (const type of CONTENT_REACTION_TYPES) {
+    if (counts[type] > 0 && !baseReactions.includes(type)) {
+      baseReactions.push(type)
+    }
+  }
   if (activeReaction && !baseReactions.includes(activeReaction)) {
     baseReactions.push(activeReaction)
   }
@@ -214,7 +223,7 @@ export default function ReactionPicker({
   )
 
   return (
-    <div className="mt-4">
+    <div className="mt-3">
       <div
         className="relative w-fit"
         onMouseEnter={handleMouseEnter}
@@ -231,19 +240,25 @@ export default function ReactionPicker({
         <div
           role="group"
           aria-label={`${targetType === "review" ? "Review" : "Comment"} reactions`}
-          className="flex flex-wrap gap-2"
+          className="flex flex-wrap items-center gap-1.5"
         >
           {baseReactions.map((type) => {
+            const isSelected = activeReaction === type
+            const count = counts[type]
+
             return (
               <Button
                 key={type}
                 type="button"
-                size="icon"
-                variant={activeReaction === type ? "secondary" : "outline"}
-                aria-label={`${reactionLabels[type]} (${counts[type]})`}
-                aria-pressed={activeReaction === type}
+                variant={isSelected ? "secondary" : "outline"}
+                aria-label={`${reactionLabels[type]} (${count})`}
+                aria-pressed={isSelected}
                 disabled={isPending}
-                className="transition-transform hover:scale-125 focus-visible:scale-125"
+                className={`h-8 gap-1.5 px-2.5 text-xs transition-all hover:scale-105 ${
+                  isSelected
+                    ? "border-primary/50 bg-primary/10 font-medium text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
                 onPointerDown={(event) => handleTouchStart(event.pointerType)}
                 onClick={() => {
                   if (suppressNextClick.current) {
@@ -259,45 +274,69 @@ export default function ReactionPicker({
               >
                 <span
                   aria-hidden="true"
-                  className="text-xl leading-none transition-transform"
+                  className="text-base leading-none transition-transform"
                 >
                   {reactionEmojis[type]}
                 </span>
+                {count > 0 && (
+                  <span className="font-semibold text-foreground">{count}</span>
+                )}
                 <span className="sr-only">{counts[type]}</span>
               </Button>
             )
           })}
+
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="size-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="Add reaction"
+            title="Add reaction"
+            disabled={isPending}
+            onClick={() => {
+              setIsPickerOpen((prev) => !prev)
+              setIsPickerPinned((prev) => !prev)
+            }}
+          >
+            <SmilePlus className="size-4" aria-hidden="true" />
+          </Button>
+
           {activeReaction !== null && hasReactions && (
             <Button
               type="button"
               size="icon"
               variant="ghost"
+              className="size-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
               aria-label="Remove my reaction"
+              title="Remove my reaction"
               disabled={isPending}
               onClick={handleRemoveReaction}
             >
-              <X aria-hidden="true" />
+              <X className="size-3.5" aria-hidden="true" />
             </Button>
           )}
         </div>
+
         {isPickerOpen && pickerReactions.length > 0 && (
           <div
             role="group"
             aria-label="More reactions"
-            className="absolute bottom-full left-0 z-30 mb-2 flex w-max max-w-[calc(100vw-2rem)] flex-nowrap gap-1 overflow-x-auto overscroll-x-contain rounded-full border bg-card p-1.5 shadow-xl"
+            className="absolute bottom-full left-0 z-30 mb-2 flex w-max max-w-[calc(100vw-2rem)] flex-nowrap gap-1 overflow-x-auto overscroll-x-contain rounded-full border bg-card p-1.5 shadow-xl animate-in fade-in zoom-in-95"
             onMouseEnter={handlePickerMouseEnter}
           >
             {pickerReactions.map((type) => {
+              const isSelected = activeReaction === type
               return (
                 <Button
                   key={type}
                   type="button"
                   size="sm"
-                  variant={activeReaction === type ? "secondary" : "ghost"}
+                  variant={isSelected ? "secondary" : "ghost"}
                   aria-label={`${reactionLabels[type]} (${counts[type]})`}
-                  aria-pressed={activeReaction === type}
+                  aria-pressed={isSelected}
                   disabled={isPending}
-                  className="h-auto min-w-12 flex-col gap-1 px-1.5 py-1.5 text-[10px] leading-none transition-transform hover:scale-110 focus-visible:scale-110"
+                  className="h-auto min-w-11 flex-col gap-0.5 px-2 py-1 text-[10px] leading-none transition-transform hover:scale-115 focus-visible:scale-115"
                   onClick={() => {
                     void handleReaction(type)
                     setIsPickerOpen(false)
@@ -307,7 +346,9 @@ export default function ReactionPicker({
                   <span aria-hidden="true" className="text-xl leading-none">
                     {reactionEmojis[type]}
                   </span>
-                  <span>{reactionLabels[type]}</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {reactionLabels[type]}
+                  </span>
                   <span className="sr-only">{counts[type]}</span>
                 </Button>
               )
