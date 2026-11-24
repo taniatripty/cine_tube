@@ -29,6 +29,7 @@ const navigationLinks = [
 type NavbarUser = {
   name: string
   email: string
+  role?: string
 }
 
 export function NavbarSkeleton() {
@@ -89,6 +90,16 @@ function NavbarContent() {
     router.refresh()
   }
 
+  const dashboardHref =
+    user?.role?.toUpperCase() === "ADMIN"
+      ? "/admin/dashboard"
+      : "/user/dashboard"
+
+  const navLinks = [
+    ...navigationLinks,
+    ...(user ? [{ label: "Dashboard", href: dashboardHref }] : []),
+  ]
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
@@ -107,7 +118,7 @@ function NavbarContent() {
           aria-label="Main navigation"
           className="hidden items-center gap-1 md:flex"
         >
-          {navigationLinks.map((link) => (
+          {navLinks.map((link) => (
             <Button
               key={link.label}
               variant="ghost"
@@ -152,6 +163,13 @@ function NavbarContent() {
             />
           ) : user ? (
             <div className="hidden items-center gap-3 sm:flex">
+              <Button
+                variant="outline"
+                nativeButton={false}
+                render={<Link href={dashboardHref} />}
+              >
+                Dashboard
+              </Button>
               <div className="max-w-40 text-right">
                 <p className="truncate text-sm font-medium">{user.name}</p>
                 <p className="truncate text-xs text-muted-foreground">
@@ -200,7 +218,7 @@ function NavbarContent() {
                 aria-label="Mobile navigation"
                 className="flex flex-col gap-1 px-4"
               >
-                {navigationLinks.map((link) => (
+                {navLinks.map((link) => (
                   <Button
                     key={link.label}
                     variant="ghost"
@@ -233,6 +251,14 @@ function NavbarContent() {
                         {user.email}
                       </p>
                     </div>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      nativeButton={false}
+                      render={<Link href={dashboardHref} />}
+                    >
+                      Dashboard
+                    </Button>
                     <form action={handleLogOut}>
                       <Button type="submit" variant="outline" className="w-full">
                         Log out

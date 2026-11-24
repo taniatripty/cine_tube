@@ -23,6 +23,7 @@ export type UserInfo = {
   email: string
   emailVerified: boolean
   needPasswordChange: boolean
+  role?: string
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -136,6 +137,13 @@ export async function getUserInfo(
         ? tokenPayload.name
         : undefined
 
+    const tokenRole =
+      typeof tokenPayload === "object" &&
+      tokenPayload !== null &&
+      typeof (tokenPayload as Record<string, unknown>).role === "string"
+        ? ((tokenPayload as Record<string, unknown>).role as string)
+        : undefined
+
     if (
       typeof data.email !== "string" ||
       typeof data.emailVerified !== "boolean" ||
@@ -145,6 +153,11 @@ export async function getUserInfo(
       return null
     }
 
+    const userRole =
+      typeof data.role === "string" && data.role.trim()
+        ? data.role
+        : tokenRole
+
     return {
       name:
         typeof data.name === "string" && data.name.trim()
@@ -153,6 +166,7 @@ export async function getUserInfo(
       email: data.email,
       emailVerified: data.emailVerified,
       needPasswordChange,
+      role: userRole,
     }
   } catch (error) {
     console.error("Error fetching user info:", error)
@@ -161,7 +175,7 @@ export async function getUserInfo(
 }
 
 export async function getCurrentUserAction(): Promise<
-  Pick<UserInfo, "name" | "email"> | null
+  Pick<UserInfo, "name" | "email" | "role"> | null
 > {
   const cookieStore = await cookies()
   const accessToken = cookieStore.get("accessToken")?.value
@@ -170,12 +184,44 @@ export async function getCurrentUserAction(): Promise<
     return null
   }
 
+  let roleFromToken: string | undefined
+  let nameFromToken: string | undefined
+  let emailFromToken: string | undefined
+
+  try {
+    const decoded = jwt.decode(accessToken)
+    if (decoded && typeof decoded === "object") {
+      const rec = decoded as Record<string, unknown>
+      if (typeof rec.role === "string") roleFromToken = rec.role
+      if (typeof rec.name === "string") nameFromToken = rec.name
+      if (typeof rec.email === "string") emailFromToken = rec.email
+    }
+  } catch {
+    // ignore
+  }
+
   const user = await getUserInfo(
     accessToken,
     cookieStore.get("better-auth.session_token")?.value
   )
 
-  return user ? { name: user.name, email: user.email } : null
+  if (user) {
+    return {
+      name: user.name,
+      email: user.email,
+      role: user.role || roleFromToken,
+    }
+  }
+
+  if (emailFromToken || nameFromToken) {
+    return {
+      name: nameFromToken || emailFromToken || "User",
+      email: emailFromToken || "",
+      role: roleFromToken || "USER",
+    }
+  }
+
+  return null
 }
 
 export async function logOutAction(): Promise<void> {
