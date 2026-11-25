@@ -351,43 +351,7 @@ export default function DashboardNavbarContent({
                     </div>
                   </div>
 
-                  <div className="my-1 border-t border-border" />
-
-                  {/* Navigation Links dynamically mapped from navItems */}
-                  <nav className="flex flex-col gap-0.5">
-                    {activeNavSections
-                      .flatMap((section) => section.items)
-                      .slice(0, 5)
-                      .map((item) => {
-                        const Icon = getIconComponent(item.icon)
-                        const isActive = pathname === item.href
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                              "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors hover:bg-muted",
-                              isActive
-                                ? "bg-red-500/10 text-red-600 font-semibold dark:bg-red-950/40 dark:text-red-400"
-                                : "text-foreground"
-                            )}
-                            onClick={() => setIsProfileOpen(false)}
-                          >
-                            <Icon className="size-4 text-muted-foreground" />
-                            <span>{item.title}</span>
-                          </Link>
-                        )
-                      })}
-
-                    <Link
-                      href="/"
-                      className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      <Clapperboard className="size-4 text-muted-foreground" />
-                      <span>Explore Main Site</span>
-                    </Link>
-                  </nav>
+                 
 
                   <div className="my-1 border-t border-border" />
 
