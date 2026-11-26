@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 
+import { getAllTags, type ReviewTag } from "@/services/review.services"
 import ReviewForm from "./ReviewForm"
 
 type ReviewPageProps = {
@@ -31,5 +32,25 @@ async function ReviewContent({ searchParams }: ReviewPageProps) {
   const normalizedMediaId =
     typeof mediaId === "string" ? mediaId.trim() : ""
 
-  return <ReviewForm mediaId={normalizedMediaId} />
+  let tags: ReviewTag[] = []
+  let tagLoadError: string | undefined
+
+  if (normalizedMediaId) {
+    try {
+      const response = await getAllTags()
+      tags = Array.isArray(response.data) ? response.data : []
+    } catch (error) {
+      console.error("Failed to load tags for review creation:", error)
+      tagLoadError =
+        "Could not load tags right now. You can still submit your review without tags."
+    }
+  }
+
+  return (
+    <ReviewForm
+      mediaId={normalizedMediaId}
+      tags={tags}
+      tagLoadError={tagLoadError}
+    />
+  )
 }

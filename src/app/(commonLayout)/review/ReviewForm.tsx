@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react"
 import Link from "next/link"
-import { ArrowLeft, Star } from "lucide-react"
+import { ArrowLeft, Star, Tag } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -10,11 +10,31 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   createReviewAction,
   type CreateReviewActionResult,
+  type ReviewTag,
 } from "@/services/review.services"
 
-export default function ReviewForm({ mediaId }: { mediaId: string }) {
+type ReviewFormProps = {
+  mediaId: string
+  tags?: ReviewTag[]
+  tagLoadError?: string
+}
+
+export default function ReviewForm({
+  mediaId,
+  tags = [],
+  tagLoadError,
+}: ReviewFormProps) {
   const [isPending, setIsPending] = useState(false)
   const [result, setResult] = useState<CreateReviewActionResult | null>(null)
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
+
+  const toggleTag = (tagId: string) => {
+    setSelectedTagIds((prev) =>
+      prev.includes(tagId)
+        ? prev.filter((id) => id !== tagId)
+        : [...prev, tagId],
+    )
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -55,6 +75,7 @@ export default function ReviewForm({ mediaId }: { mediaId: string }) {
         rating,
         content,
         isSpoiler: formData.get("isSpoiler") === "on",
+        ...(selectedTagIds.length > 0 ? { tagIds: selectedTagIds } : {}),
       })
       setResult(actionResult)
     } catch (error) {
@@ -148,6 +169,56 @@ export default function ReviewForm({ mediaId }: { mediaId: string }) {
                   placeholder="What did you think of this title?"
                   required
                 />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="inline-flex items-center gap-1.5">
+                    <Tag className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                    Tags (optional)
+                  </Label>
+                  {selectedTagIds.length > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {selectedTagIds.length} selected
+                    </span>
+                  )}
+                </div>
+
+                {tagLoadError ? (
+                  <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+                    {tagLoadError}
+                  </p>
+                ) : tags.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map((tag) => {
+                      const isSelected = selectedTagIds.includes(tag.id)
+                      return (
+                        <label
+                          key={tag.id}
+                          className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                            isSelected
+                              ? "border-red-600 bg-red-600/10 text-red-600 dark:text-red-400"
+                              : "border-border bg-background text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            name="tagIds"
+                            value={tag.id}
+                            checked={isSelected}
+                            onChange={() => toggleTag(tag.id)}
+                            className="size-3.5 accent-red-600"
+                          />
+                          {tag.name}
+                        </label>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    No tags available.
+                  </p>
+                )}
               </div>
 
               <label

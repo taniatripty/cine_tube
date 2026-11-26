@@ -54,6 +54,12 @@ export type ReviewComment = {
   commentLikes: CommentLike[]
 }
 
+export type ReviewTag = {
+  id: string
+  name: string
+  slug?: string
+}
+
 export type MyReview = {
   id: string
   userId: string
@@ -68,8 +74,13 @@ export type MyReview = {
   createdAt: string
   updatedAt: string
   media: ReviewMedia
+  tags?: ReviewTag[]
   reviewLikes: ReviewLike[]
   comments: ReviewComment[]
+}
+
+export async function getAllTags(): Promise<ApiResponse<ReviewTag[]>> {
+  return httpClient.get<ReviewTag[]>("/tags/all")
 }
 
 export async function getMyReviews(): Promise<ApiResponse<MyReview[]>> {
@@ -81,6 +92,7 @@ export type CreateReviewInput = {
   rating: number
   content: string
   isSpoiler?: boolean
+  tagIds?: string[]
 }
 
 export type CreateReviewActionResult = Pick<
@@ -202,10 +214,18 @@ export type UpdateReviewInput = {
   rating?: number
   content?: string
   isSpoiler?: boolean
+  tagIds?: string[]
 }
 
 export type UpdateReviewActionResult = Pick<ApiErrorResponse, "success" | "message">
 export type DeleteReviewActionResult = Pick<ApiErrorResponse, "success" | "message">
+
+const normalizeTagIds = (tagIds?: string[]): string[] | undefined => {
+  if (tagIds === undefined) return undefined
+  return Array.from(
+    new Set(tagIds.map((id) => id.trim()).filter((id) => id.length > 0)),
+  )
+}
 
 export async function updateReviewAction(
   reviewId: string,
@@ -223,11 +243,23 @@ export async function updateReviewAction(
   if (payload.content !== undefined && !payload.content.trim()) {
     return { success: false, message: "Review content cannot be empty." }
   }
+  if (
+    payload.tagIds !== undefined &&
+    (!Array.isArray(payload.tagIds) ||
+      payload.tagIds.some((id) => typeof id !== "string" || !id.trim()))
+  ) {
+    return { success: false, message: "Selected tags are invalid." }
+  }
+
+  const normalizedTagIds = normalizeTagIds(payload.tagIds)
 
   try {
     const response = await httpClient.patch<unknown>(
       `/reviews/${encodeURIComponent(reviewId.trim())}`,
-      payload,
+      {
+        ...payload,
+        ...(normalizedTagIds !== undefined ? { tagIds: normalizedTagIds } : {}),
+      },
     )
     return { success: response.success, message: response.message }
   } catch (error) {
@@ -281,7 +313,10 @@ export async function createReviewAction(
     payload.rating > 5 ||
     typeof payload.content !== "string" ||
     (payload.isSpoiler !== undefined &&
-      typeof payload.isSpoiler !== "boolean")
+      typeof payload.isSpoiler !== "boolean") ||
+    (payload.tagIds !== undefined &&
+      (!Array.isArray(payload.tagIds) ||
+        payload.tagIds.some((id) => typeof id !== "string" || !id.trim())))
   ) {
     return {
       success: false,
@@ -291,6 +326,7 @@ export async function createReviewAction(
 
   const mediaId = payload.mediaId.trim()
   const content = payload.content.trim()
+  const tagIds = normalizeTagIds(payload.tagIds)
   if (!mediaId || !content) {
     return {
       success: false,
@@ -304,6 +340,7 @@ export async function createReviewAction(
       rating: payload.rating,
       content,
       isSpoiler: payload.isSpoiler ?? false,
+      ...(tagIds && tagIds.length > 0 ? { tagIds } : {}),
     })
 
     return {
