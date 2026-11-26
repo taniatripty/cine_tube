@@ -9,6 +9,7 @@ import {
   Heart,
   MessageCircle,
   Star,
+  Tag,
   Tv,
 } from "lucide-react"
 import Link from "next/link"
@@ -758,6 +759,21 @@ async function MediaDetailsContent({
                         content={review.content}
                         isSpoiler={review.isSpoiler}
                       />
+
+                      {/* Review Tags */}
+                      {review.tags && review.tags.length > 0 && (
+                        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                          {review.tags.map((tag) => (
+                            <span
+                              key={tag.id}
+                              className="inline-flex items-center gap-1 rounded-full border border-red-600/20 bg-red-600/10 px-2.5 py-0.5 text-xs font-medium text-red-600 dark:text-red-400"
+                            >
+                              <Tag className="size-3" aria-hidden="true" />
+                              {tag.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
                       {/* Review Reactions */}
                       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-3">

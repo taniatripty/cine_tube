@@ -109,6 +109,12 @@ export type MediaUser = {
   } | null
 }
 
+export type MediaReviewTag = {
+  id: string
+  name: string
+  createdAt?: string
+}
+
 export type MediaReview = {
   id: string
   userId?: string
@@ -128,6 +134,7 @@ export type MediaReview = {
   status?: string
   createdAt?: string | null
   updatedAt?: string | null
+  tags?: MediaReviewTag[] | null
   reviewLikes?: MediaReactionItem[] | null
   user?: MediaUser | null
   comments?: MediaComment[] | null
