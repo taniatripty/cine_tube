@@ -60,6 +60,15 @@ export type ReviewTag = {
   slug?: string
 }
 
+export type ReviewStatus = "PENDING" | "APPROVED" | "REJECTED" | "UNPUBLISHED"
+
+export type AdminReviewUser = {
+  id: string
+  name: string
+  email: string
+  image: string | null
+}
+
 export type MyReview = {
   id: string
   userId: string
@@ -79,8 +88,16 @@ export type MyReview = {
   comments: ReviewComment[]
 }
 
+export type AdminReview = MyReview & {
+  user?: AdminReviewUser | null
+}
+
 export async function getAllTags(): Promise<ApiResponse<ReviewTag[]>> {
   return httpClient.get<ReviewTag[]>("/tags/all")
+}
+
+export async function getAllReviews(): Promise<ApiResponse<AdminReview[]>> {
+  return httpClient.get<AdminReview[]>("/reviews/all")
 }
 
 export async function getMyReviews(): Promise<ApiResponse<MyReview[]>> {
@@ -297,6 +314,59 @@ export async function deleteReviewAction(
     }
     console.error("Review delete failed:", error)
     return { success: false, message: "Delete failed due to an unexpected error." }
+  }
+}
+
+export type ModerateReviewInput = {
+  status: ReviewStatus
+  moderationNote?: string
+}
+
+export type ModerateReviewActionResult = Pick<ApiErrorResponse, "success" | "message">
+
+const VALID_REVIEW_STATUSES: readonly ReviewStatus[] = [
+  "PENDING",
+  "APPROVED",
+  "REJECTED",
+  "UNPUBLISHED",
+]
+
+export async function moderateReviewAction(
+  reviewId: string,
+  payload: ModerateReviewInput,
+): Promise<ModerateReviewActionResult> {
+  if (!reviewId?.trim()) {
+    return { success: false, message: "Review ID is required." }
+  }
+  if (!VALID_REVIEW_STATUSES.includes(payload.status)) {
+    return { success: false, message: "Please select a valid review status." }
+  }
+
+  try {
+    const response = await httpClient.patch<unknown>(
+      `/reviews/${encodeURIComponent(reviewId.trim())}/moderate`,
+      {
+        status: payload.status,
+        ...(payload.moderationNote !== undefined
+          ? { moderationNote: payload.moderationNote.trim() }
+          : {}),
+      },
+    )
+    return { success: response.success, message: response.message }
+  } catch (error) {
+    if (axios.isAxiosError<ApiErrorResponse>(error)) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ??
+          `Moderation failed: ${error.message}`,
+      }
+    }
+    console.error("Review moderation failed:", error)
+    return {
+      success: false,
+      message: "Moderation failed due to an unexpected error.",
+    }
   }
 }
 

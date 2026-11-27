@@ -12,6 +12,107 @@ import {
   type ReactionCountGroup,
 } from "@/types/reaction.types"
 
+export type CommentStatus = "PENDING" | "APPROVED" | "REJECTED" | "HIDDEN"
+
+export type AdminCommentUser = {
+  id: string
+  name: string
+  email: string
+  image: string | null
+}
+
+export type AdminCommentReview = {
+  id: string
+  mediaId: string
+  rating: number
+  content: string
+  status: string
+  media?: {
+    id: string
+    title: string
+    poster: string | null
+    type: string
+  } | null
+}
+
+export type AdminComment = {
+  id: string
+  userId: string
+  reviewId: string
+  parentId: string | null
+  content: string
+  status: string
+  replyCount?: number
+  reactionCount?: number
+  createdAt: string
+  updatedAt: string
+  user?: AdminCommentUser | null
+  review?: AdminCommentReview | null
+  parent?: {
+    id: string
+    content: string
+    userId: string
+  } | null
+  _count?: {
+    commentLikes: number
+    replies: number
+  }
+}
+
+export type ModerateCommentInput = {
+  status: CommentStatus
+}
+
+export type ModerateCommentActionResult = Pick<
+  ApiErrorResponse,
+  "success" | "message"
+>
+
+export async function getAllComments(): Promise<ApiResponse<AdminComment[]>> {
+  return httpClient.get<AdminComment[]>("/comments/all")
+}
+
+const VALID_COMMENT_STATUSES: readonly CommentStatus[] = [
+  "PENDING",
+  "APPROVED",
+  "REJECTED",
+  "HIDDEN",
+]
+
+export async function moderateCommentAction(
+  commentId: string,
+  payload: ModerateCommentInput,
+): Promise<ModerateCommentActionResult> {
+  if (!commentId?.trim()) {
+    return { success: false, message: "Comment ID is required." }
+  }
+  if (!VALID_COMMENT_STATUSES.includes(payload.status)) {
+    return { success: false, message: "Please select a valid comment status." }
+  }
+
+  try {
+    const response = await httpClient.patch<unknown>(
+      `/comments/${encodeURIComponent(commentId.trim())}/moderate`,
+      { status: payload.status },
+    )
+    return { success: response.success, message: response.message }
+  } catch (error) {
+    if (axios.isAxiosError<ApiErrorResponse>(error)) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ??
+          `Comment moderation failed: ${error.message}`,
+      }
+    }
+    console.error("Comment moderation failed:", error)
+    return {
+      success: false,
+      message: "Comment moderation failed due to an unexpected error.",
+    }
+  }
+}
+
 export type CreateCommentInput = {
   reviewId: string
   parentId?: string | null

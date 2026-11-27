@@ -57,14 +57,14 @@ export const adminNavSections: NavSection[] = [
     roles: ["ADMIN"],
     items: [
       {
-        title: "Reviews",
-        href: "/review",
+        title: "Approve  Reviews",
+        href: "/admin/dashboard/approveReview",
         icon: "Star",
         roles: ["ADMIN"],
       },
       {
-        title: "Comments",
-        href: "/comment",
+        title: "Approve Comments",
+        href: "/admin/dashboard/approveComment",
         icon: "MessageSquare",
         roles: ["ADMIN"],
       },
